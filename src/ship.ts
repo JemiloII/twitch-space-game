@@ -1,17 +1,21 @@
-import { Scene, Types } from 'phaser';
+import { Scene, Physics } from 'phaser';
 import { Controls } from './controls';
 
-export type Ship = Types.Physics.Arcade.SpriteWithDynamicBody;
+export type Ship = Physics.Matter.Sprite;
 
 export function createShip(scene: Scene, x: number, y: number): Ship {
-  return scene.physics.add.sprite(x, y, 'ship')
+  const ship = scene.matter.add.sprite(x, y, 'ship')
     .setScale(0.25)
     .setOrigin(0.5)
-    .setCollideWorldBounds(false)
-    .setDamping(true)
-    .setDrag(0.99)
-    .setAngularDrag(400)
-    .setMaxVelocity(300);
+    .setFrictionAir(0.02)
+    .setMass(1);
+  
+  // Set inertia to prevent rotation from collisions
+  if (ship.body) {
+    (ship.body as any).inertia = Infinity;
+  }
+  
+  return ship;
 }
 
 export function updateShipMovement(
@@ -28,20 +32,22 @@ export function updateShipMovement(
         ship.setAngularVelocity(0);
         break;
     case leftRotation:
-        ship.setAngularVelocity(-150);
+        ship.setAngularVelocity(-3);
         break;
     case rightRotation:
-        ship.setAngularVelocity(150);
+        ship.setAngularVelocity(3);
         break;
     default:
         ship.setAngularVelocity(0);
   }
 
   if (up.isDown) {
-    const angle = ship.rotation + Phaser.Math.DegToRad(90);
-    scene.physics.velocityFromRotation(angle, 200, ship.body.acceleration);
-  } else {
-    ship.setAcceleration(0);
+    const angle = ship.rotation;
+    const force = 0.002;
+    ship.applyForce(new Phaser.Math.Vector2(
+      Math.cos(angle) * force,
+      Math.sin(angle) * force
+    ));
   }
 }
 

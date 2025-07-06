@@ -50,6 +50,7 @@ export default class GameScene extends Scene {
             console.log(`[GameScene] created sprite for id: ${id}`);
           }
 
+          // Update position directly from server (server is source of truth)
           this.players[id].x = data.x;
           this.players[id].y = data.y;
           this.players[id].rotation = data.rotation + Phaser.Math.DegToRad(-90);

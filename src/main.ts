@@ -11,8 +11,8 @@ const config: Types.Core.GameConfig = {
         autoCenter: Scale.CENTER_BOTH,
     },
     physics: {
-        default: 'arcade',
-        arcade: {
+        default: 'matter',
+        matter: {
             gravity: { x: 0, y: 0 },
             debug: false
         }
