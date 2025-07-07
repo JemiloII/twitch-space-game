@@ -15,7 +15,8 @@ export function RecolorTexture(
   replaceMap: Record<string, string>
 ): void {
   const src = scene.textures.get(sourceKey).getSourceImage();
-  const canvas = scene.textures.createCanvas(targetKey, src.width, src.height)!.getSourceImage() as HTMLCanvasElement;
+  const canvasTexture = scene.textures.createCanvas(targetKey, src.width, src.height)!;
+  const canvas = canvasTexture.getSourceImage() as HTMLCanvasElement;
   const context: CanvasRenderingContext2D = canvas.getContext('2d')!;
 
   context.drawImage(src as HTMLImageElement, 0, 0);
@@ -50,7 +51,8 @@ export function RecolorTexture(
       }
     }
   }
-
   context.putImageData(imageData, 0, 0);
-  scene.textures.addCanvas(targetKey, canvas);
+  
+  // Refresh the texture to update the WebGL texture from the canvas
+  canvasTexture.refresh();
 }

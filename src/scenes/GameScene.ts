@@ -39,15 +39,18 @@ export default class GameScene extends Scene {
           const data = message.players[id];
 
           if (!this.players[id]) {
-            console.log('Creating ship...');
-            this.players[id] = createShip(this, data.x, data.y);
+            data.color = {
+              '#AC3939': '#FF8A00',
+              '#BD3E3E': '#FFA811',
+            };
+
+            this.players[id] = createShip(this, data.x, data.y, data.color);
             this.add.particles('red', {
               speed: 100,
               scale: { start: 1, end: 0 },
               blendMode: 'ADD',
               follow: this.players[id]
             });
-            console.log(`[GameScene] created sprite for id: ${id}`);
           }
 
           // Update position directly from server (server is the source of truth)
