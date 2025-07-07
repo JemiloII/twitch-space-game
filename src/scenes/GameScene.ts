@@ -7,6 +7,7 @@ import * as Socket from '../net/socket';
 export default class GameScene extends Scene {
   playerId: string = '';
   players: Record<string, Ship> = {};
+  playerLabels: Record<string, Phaser.GameObjects.Text> = {};
   socket!: WebSocket;
   cursors!: Controls;
 
@@ -51,12 +52,27 @@ export default class GameScene extends Scene {
               blendMode: 'ADD',
               follow: this.players[id]
             });
+
+            // Create username label above the player
+            this.playerLabels[id] = this.add.text(data.x, data.y - 25, data.username, {
+              fontSize: '14px',
+              color: '#ffffff',
+              stroke: '#000000',
+              strokeThickness: 2,
+              align: 'center'
+            }).setOrigin(0.5);
           }
 
           // Update position directly from server (server is the source of truth)
           this.players[id].x = data.x;
           this.players[id].y = data.y;
           this.players[id].rotation = data.rotation + Phaser.Math.DegToRad(-90);
+
+          // Update username label position
+          if (this.playerLabels[id]) {
+            this.playerLabels[id].x = data.x;
+            this.playerLabels[id].y = data.y - 25;
+          }
         }
       }
     });

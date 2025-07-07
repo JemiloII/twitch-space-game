@@ -76,10 +76,11 @@ export function getPlayerSnapshot(players) {
   const snapshot = {};
   for (const id in players) {
     const body = players[id].body;
-    snapshot[id] = { 
-      x: body.position.x, 
-      y: body.position.y, 
-      rotation: body.angle 
+    snapshot[id] = {
+      x: body.position.x,
+      y: body.position.y,
+      rotation: body.angle,
+      username: players[id].username
     };
   }
   return snapshot;

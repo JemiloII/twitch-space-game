@@ -50,6 +50,7 @@ wss.on('connection', socket => {
           
           players[playerId] = {
             body: body,
+            username: playerId.substring(0, 6), // For now, use first 6 chars of ID
             input: {
               up: false,
               down: false,
