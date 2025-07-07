@@ -51,8 +51,7 @@ export function RecolorTexture(
       }
     }
   }
+
   context.putImageData(imageData, 0, 0);
-  
-  // Refresh the texture to update the WebGL texture from the canvas
   canvasTexture.refresh();
 }
