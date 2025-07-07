@@ -31,25 +31,25 @@ export function removePlayerBody(body) {
 }
 
 export function updatePhysics(players) {
-  const dt = 1 / 60;
+  const tickRate = 1 / 60;
   
   for (const id in players) {
-    const p = players[id];
-    const body = p.body;
+    const player = players[id];
+    const body = player.body;
 
-    // Handle rotation
-    if (p.input.left) {
-      Matter.Body.setAngle(body, body.angle - PHYSICS_CONFIG.rotationSpeed * dt);
+    // Handle rotation (support both A/D and Q/E)
+    if (player.input.left || player.input.rotateLeft) {
+      Matter.Body.setAngle(body, body.angle - PHYSICS_CONFIG.rotationSpeed * tickRate);
     }
-    if (p.input.right) {
-      Matter.Body.setAngle(body, body.angle + PHYSICS_CONFIG.rotationSpeed * dt);
+    if (player.input.right || player.input.rotateRight) {
+      Matter.Body.setAngle(body, body.angle + PHYSICS_CONFIG.rotationSpeed * tickRate);
     }
 
     // Handle thrust
-    if (p.input.up) {
+    if (player.input.up) {
       const force = {
-        x: Math.cos(body.angle) * PHYSICS_CONFIG.speed * dt * PHYSICS_CONFIG.forceMultiplier,
-        y: Math.sin(body.angle) * PHYSICS_CONFIG.speed * dt * PHYSICS_CONFIG.forceMultiplier
+        x: Math.cos(body.angle) * PHYSICS_CONFIG.speed * tickRate * PHYSICS_CONFIG.forceMultiplier,
+        y: Math.sin(body.angle) * PHYSICS_CONFIG.speed * tickRate * PHYSICS_CONFIG.forceMultiplier
       };
       Matter.Body.applyForce(body, body.position, force);
     }

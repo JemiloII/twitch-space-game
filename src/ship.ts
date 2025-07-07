@@ -1,4 +1,4 @@
-import { Scene, Physics } from 'phaser';
+import Phaser, { Scene, Physics } from 'phaser';
 import { Controls } from './controls';
 
 export type Ship = Physics.Matter.Sprite;
@@ -18,14 +18,10 @@ export function createShip(scene: Scene, x: number, y: number): Ship {
   return ship;
 }
 
-export function updateShipMovement(
-  scene: Scene,
-  ship: Ship,
-  cursors: Controls
-) {
-    const { left, rotateLeft, right, rotateRight, up } = cursors;
-    const leftRotation = left.isDown || rotateLeft.isDown;
-    const rightRotation = right.isDown || rotateRight.isDown;
+export function updateShipMovement(ship: Ship, cursors: Controls) {
+  const { left, rotateLeft, right, rotateRight, up } = cursors;
+  const leftRotation = left.isDown || rotateLeft.isDown;
+  const rightRotation = right.isDown || rotateRight.isDown;
 
   switch(true) {
     case leftRotation && rightRotation:

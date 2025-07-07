@@ -1,7 +1,7 @@
 import Phaser, { Scene } from 'phaser';
 import { createBackground } from '../background';
 import { Controls, setControls } from '../controls';
-import { createShip, Ship } from '../ship';
+import { createShip, Ship, updateShipMovement } from '../ship';
 import * as Socket from '../net/socket';
 
 export default class GameScene extends Scene {
@@ -50,7 +50,7 @@ export default class GameScene extends Scene {
             console.log(`[GameScene] created sprite for id: ${id}`);
           }
 
-          // Update position directly from server (server is source of truth)
+          // Update position directly from server (server is the source of truth)
           this.players[id].x = data.x;
           this.players[id].y = data.y;
           this.players[id].rotation = data.rotation + Phaser.Math.DegToRad(-90);
@@ -61,6 +61,11 @@ export default class GameScene extends Scene {
 
   update() {
     const { up, down, left, right, rotateLeft, rotateRight, space, shift } = this.cursors;
+
+    // Update local ship movement with your switch case logic
+    if (this.playerId && this.players[this.playerId]) {
+      updateShipMovement(this.players[this.playerId], this.cursors);
+    }
 
     Socket.send({
       up: up.isDown,

@@ -65,6 +65,11 @@ export function connect(url: string = socketUrl): WebSocket {
     setTimeout(() => connect(socketUrl), reconnectDelay);
   });
 
+  socket.addEventListener('error', (error) => {
+    console.error('[socket] error:', error);
+    isConnected = false;
+  });
+
   return socket;
 }
 

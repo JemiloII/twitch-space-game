@@ -6,6 +6,7 @@ const config: Types.Core.GameConfig = {
     type: AUTO,
     width: 800,
     height: 450,
+    backgroundColor: '#7CFC00',
     scale: {
         mode: Scale.ScaleModes.FIT,
         autoCenter: Scale.CENTER_BOTH,
