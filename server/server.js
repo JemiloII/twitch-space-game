@@ -11,6 +11,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const players = {}; // { socket.id: { body, input } }
+const disconnectedPlayers = {}; // { playerId: { player, timeoutId } }
 
 wss.on('connection', socket => {
   let playerId = undefined;
@@ -35,7 +36,15 @@ wss.on('connection', socket => {
         // Only now assign playerId after validation/generation is complete
         playerId = id;
 
-        if (!players[playerId]) {
+        // Check if player is in disconnected list (reconnecting)
+        if (disconnectedPlayers[playerId]) {
+          console.log('[server] player reconnecting:', playerId);
+          // Cancel the removal timeout
+          clearTimeout(disconnectedPlayers[playerId].timeoutId);
+          // Restore the player to active players
+          players[playerId] = disconnectedPlayers[playerId].player;
+          delete disconnectedPlayers[playerId];
+        } else if (!players[playerId]) {
           // Create a matter.js body for the player
           const body = createPlayerBody();
           
@@ -94,9 +103,23 @@ wss.on('connection', socket => {
   socket.on('close', () => {
     console.log('Socket closed for', playerId);
     if (playerId && players[playerId]) {
-      // Remove the matter.js body from the world
-      removePlayerBody(players[playerId].body);
+      console.log('[server] player disconnected, starting 60s timeout:', playerId);
+      
+      // Move player to disconnected list with a timeout
+      const player = players[playerId];
       delete players[playerId];
+      
+      const timeoutId = setTimeout(() => {
+        console.log('[server] removing player after timeout:', playerId);
+        // Remove the matter.js body from the world
+        removePlayerBody(player.body);
+        delete disconnectedPlayers[playerId];
+      }, 60000 * 5); // 60 seconds
+      
+      disconnectedPlayers[playerId] = {
+        player: player,
+        timeoutId: timeoutId
+      };
     }
   });
 });
