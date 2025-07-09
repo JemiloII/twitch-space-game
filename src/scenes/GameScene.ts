@@ -59,11 +59,11 @@ export default class GameScene extends Scene {
             });
 
             // Create username label above the player
-            this.playerLabels[id] = this.add.text(data.x, data.y - 25, data.username, {
-              fontSize: '14px',
+            this.playerLabels[id] = this.add.text(data.x, data.y - 20, data.username, {
+              fontSize: '10px',
               color: '#ffffff',
               stroke: '#000000',
-              strokeThickness: 2,
+              strokeThickness: 1,
               align: 'center'
             }).setOrigin(0.5);
           }
@@ -87,7 +87,7 @@ export default class GameScene extends Scene {
           // Update username label position
           if (this.playerLabels[id]) {
             this.playerLabels[id].x = this.players[id].x;
-            this.playerLabels[id].y = this.players[id].y - 25;
+            this.playerLabels[id].y = this.players[id].y - 20;
           }
         }
       }

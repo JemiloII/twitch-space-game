@@ -19,7 +19,7 @@ const PHYSICS_CONFIG = {
 export function createPlayerBody(x = 400, y = 300) {
   const body = Matter.Bodies.circle(x, y, 10, {
     frictionAir: PHYSICS_CONFIG.frictionAir,
-    inertia: Infinity // Prevent rotation from collisions
+    inertia: Infinity
   });
   
   Matter.World.add(engine.world, body);

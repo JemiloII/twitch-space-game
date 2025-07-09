@@ -19,7 +19,6 @@ wss.on('connection', socket => {
   socket.on('message', raw => {
     try {
       const message = JSON.parse(raw.toString());
-
       if (message.type === 'handshake') {
         let { id, token } = message;
 
@@ -29,8 +28,8 @@ wss.on('connection', socket => {
           token = sign(id);
           console.log('[server] assigning new player ID:', id);
         }
-        playerId = id;
 
+        playerId = id;
         if (disconnectedPlayers[playerId]) {
           console.log('[server] player reconnecting:', playerId);
           clearTimeout(disconnectedPlayers[playerId].timeoutId);
@@ -96,9 +95,6 @@ wss.on('connection', socket => {
   socket.on('close', () => {
     console.log('Socket closed for', playerId);
     if (playerId && players[playerId]) {
-      console.log('[server] player disconnected, starting 60s timeout:', playerId);
-      
-      // Move player to the disconnected list with a timeout
       const player = players[playerId];
       delete players[playerId];
       
@@ -107,7 +103,8 @@ wss.on('connection', socket => {
         removePlayerBody(player.body);
         delete disconnectedPlayers[playerId];
       }, 60000 * 5);
-      
+      console.log('[server] player disconnected, starting 60s timeout:', playerId);
+
       disconnectedPlayers[playerId] = {
         player: player,
         timeoutId: timeoutId
