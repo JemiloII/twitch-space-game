@@ -1,7 +1,7 @@
 import Phaser, { Scene } from 'phaser';
 import { createBackground } from '../background';
 import { Controls, setControls } from '../controls';
-import { createShip, Ship, updateShipMovement } from '../ship';
+import { createShip, Ship } from '../ship';
 import * as Socket from '../net/socket';
 
 export default class GameScene extends Scene {
@@ -10,6 +10,9 @@ export default class GameScene extends Scene {
   playerLabels: Record<string, Phaser.GameObjects.Text> = {};
   socket!: WebSocket;
   cursors!: Controls;
+  
+  // For smooth interpolation
+  private serverSnapshots: Record<string, { x: number; y: number; rotation: number; timestamp: number }> = {};
 
   constructor() {
     super('Game');
@@ -36,6 +39,8 @@ export default class GameScene extends Scene {
       }
 
       if (message.type === 'snapshot') {
+        const now = Date.now();
+        
         for (const id in message.players) {
           const data = message.players[id];
 
@@ -63,15 +68,26 @@ export default class GameScene extends Scene {
             }).setOrigin(0.5);
           }
 
-          // Update position directly from server (server is the source of truth)
-          this.players[id].x = data.x;
-          this.players[id].y = data.y;
-          this.players[id].rotation = data.rotation + Phaser.Math.DegToRad(-90);
+          // Store server snapshot for interpolation
+          this.serverSnapshots[id] = {
+            x: data.x,
+            y: data.y,
+            rotation: data.rotation + Phaser.Math.DegToRad(-90),
+            timestamp: now
+          };
+
+          // Directly set server position (server is authoritative)
+          const player = this.players[id];
+          const snapshot = this.serverSnapshots[id];
+          
+          player.x = snapshot.x;
+          player.y = snapshot.y;
+          player.rotation = snapshot.rotation;
 
           // Update username label position
           if (this.playerLabels[id]) {
-            this.playerLabels[id].x = data.x;
-            this.playerLabels[id].y = data.y - 25;
+            this.playerLabels[id].x = this.players[id].x;
+            this.playerLabels[id].y = this.players[id].y - 25;
           }
         }
       }
@@ -81,11 +97,7 @@ export default class GameScene extends Scene {
   update() {
     const { up, down, left, right, rotateLeft, rotateRight, space, shift } = this.cursors;
 
-    // Update local ship movement with your switch case logic
-    if (this.playerId && this.players[this.playerId]) {
-      updateShipMovement(this.players[this.playerId], this.cursors);
-    }
-
+    // Only send input to server - no client-side physics
     Socket.send({
       up: up.isDown,
       down: down.isDown,
