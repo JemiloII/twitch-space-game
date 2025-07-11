@@ -4,9 +4,10 @@ import Tabs from './Tabs/Tabs.tsx';
 import './Panel.scss'
 
 export default function Panel() {
+  const ships = [1, 2, 3, 8];
   const tabs = ['Space Ships', 'Colors'];
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
-  const ships = [1, 2, 3, 8];
+  const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
 
   return (
     <main>
@@ -20,7 +21,8 @@ export default function Panel() {
             { ships.map((key) => (
                 <button
                   key={key}
-                  onClick={() => console.log(`Selected ship ${key}`)}
+                  className={selectedShip === key ? 'active' : ''}
+                  onClick={() => setSelectedShip(key)}
                 >
                   <img
                     src={`/public/ships/spaceShips_00${key}.png`}

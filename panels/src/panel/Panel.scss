@@ -62,13 +62,19 @@ main {
         justify-content: center;
 
         &:hover {
-          border-color: #FFB84D;
-          background-color: rgba(255, 138, 0, 0.1);
+          border-color: #FF8A00;
+          background-color: #FF9F1A;
           transform: scale(1.05);
         }
 
         &:active {
           transform: scale(0.95);
+        }
+
+        &.active {
+          border-color: #FF8A00;
+          background-color: #FF8A00;
+          box-shadow: 0 0 15px rgba(255, 138, 0, 0.7);
         }
 
         img {
