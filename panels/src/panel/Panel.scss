@@ -1,0 +1,83 @@
+@use 'Scrollbar' as *;
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0E0E10;
+}
+
+main {
+  max-width: 300px;
+  max-height: 500px;
+  border: 1px solid #FF8A00;
+  overflow: hidden;
+  color: #F1F1F1;
+
+  header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    background-color: #FF8A00;
+
+    h1 {
+      display: flex;
+      margin-block-start: 0;
+      margin-block-end: 0;
+    }
+  }
+
+  section {
+    @include ScrollBar();
+    height: 400px;
+    padding: 1rem;
+    background: linear-gradient(
+      180deg,
+      #2E2E2E 0%,
+      #0E0E10 50%,
+      #0E0E10 100%
+    );
+
+    .ships {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      button {
+        flex: 1 1 calc(50% - 0.5rem);
+        height: 100px;
+        background: transparent;
+        border: 2px solid #FF8A00;
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          border-color: #FFB84D;
+          background-color: rgba(255, 138, 0, 0.1);
+          transform: scale(1.05);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          object-position: center;
+        }
+      }
+    }
+  }
+}
