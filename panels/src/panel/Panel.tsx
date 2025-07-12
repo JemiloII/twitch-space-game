@@ -5,7 +5,7 @@ import { useTwitchAuth } from '../hooks/useTwitchAuth';
 import './Panel.scss'
 
 export default function Panel() {
-  const ships = [1, 2, 3, 8, 5, 6, 7, 9];
+  const [, ...ships]= [...Array(9).keys()];
   const tabs = ['Space Ships', 'Colors'];
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
