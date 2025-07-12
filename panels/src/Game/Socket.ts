@@ -3,7 +3,7 @@ let isConnected = false;
 let playerId = localStorage.getItem('playerId');
 let token = localStorage.getItem('token');
 let socket: WebSocket;
-let socketUrl = 'ws://localhost:3000';
+let socketUrl = 'ws://localhost:3001';
 
 function connected(event: any) {
   try {

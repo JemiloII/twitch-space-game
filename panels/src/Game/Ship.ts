@@ -1,5 +1,5 @@
 import Phaser, { Scene, Physics } from 'phaser';
-import { Controls } from './controls';
+import { type Controls } from './Controls.ts';
 import { RecolorTexture } from './RecolorTexture';
 
 export type Ship = Physics.Matter.Sprite;

@@ -130,4 +130,4 @@ setInterval(() => {
 app.use(cors());
 // app.use(express.static('public'));
 
-server.listen(3000, '0.0.0.0', () => console.log('Server running on :3000'));
+server.listen(3001, '0.0.0.0', () => console.log('Server running on :3001'));

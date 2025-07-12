@@ -1,16 +1,24 @@
 @mixin ScrollBar {
   &::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
   }
 
   &::-webkit-scrollbar-track {
-    background-color: #aaaa;
+    background: linear-gradient(
+      180deg,
+      #0E0E10 0%,
+      #2E2E2E 100%,
+    );
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #FF8A00;
-    border-radius: 10px;
+    background: linear-gradient(
+      0deg, 
+      #FF9F1A 0%, 
+      #FF8A00 30%,
+      #FF8A00 70%,
+      #FF9F1A 100%);
   }
 
   &::-webkit-scrollbar-thumb:hover {

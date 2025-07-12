@@ -1,8 +1,8 @@
-import { AUTO, Game, Types, Scale } from 'phaser';
-import GameScene from './scenes/GameScene';
+import { AUTO, Game, type Types, Scale } from 'phaser';
+import GameScene from './GameScene';
 
 const config: Types.Core.GameConfig = {
-    parent: 'app',
+    parent: 'game',
     type: AUTO,
     width: 800,
     height: 450,

@@ -1,8 +1,8 @@
 import Phaser, { Scene } from 'phaser';
-import { createBackground } from '../background';
-import { Controls, setControls } from '../controls';
-import { createShip, Ship } from '../ship';
-import * as Socket from '../net/socket';
+import { createBackground } from './Background.ts';
+import { type Controls, setControls } from './Controls.ts';
+import { createShip, type Ship } from './Ship.ts';
+import * as Socket from './Socket.ts';
 
 export default class GameScene extends Scene {
   playerId: string = '';
@@ -16,7 +16,7 @@ export default class GameScene extends Scene {
 
   constructor() {
     super('Game');
-    Socket.connect('ws://localhost:3000');
+    Socket.connect('ws://localhost:3001');
     this.socket = Socket.get();
   }
 
@@ -51,6 +51,8 @@ export default class GameScene extends Scene {
             };
 
             this.players[id] = createShip(this, data.x, data.y, data.color);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
             this.add.particles('red', {
               speed: 100,
               scale: { start: 1, end: 0 },
