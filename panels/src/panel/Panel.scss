@@ -25,51 +25,26 @@ main {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     height: 50px;
-    background-color: #FF8A00;
-    border-bottom: 1px solid #0E0E10;
+    background: linear-gradient(0deg, #FF9F1A 0%, #FF8A00 100%);
 
     h1 {
       display: flex;
       margin-block-start: 0;
       margin-block-end: 0;
-      color: #0E0E10;
-    }
-
-    .user-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: #0E0E10;
-      font-weight: bold;
-
-      .role-badge {
-        background: #0E0E10;
-        color: #FF8A00;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
-      }
-    }
-
-    .error-status {
-      font-size: 12px;
-      color: #cc0000;
-      font-weight: bold;
     }
   }
 
   section {
     @include ScrollBar();
-    height: calc(400px - 23px);
+    height: calc(350px - 21px);
     padding: 1rem;
     overflow-y: auto;
     background: linear-gradient(
       180deg,
       #2E2E2E 0%,
+      #2E2E2E 40%,
       #0E0E10 80%,
       #0E0E10 100%
     );
@@ -117,5 +92,15 @@ main {
         }
       }
     }
+  }
+
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    background: linear-gradient(0deg, #FF8A00 0%, #FF9F1A 100%);
+    color: #F1F1F1;
+    font-weight: bold;
   }
 }

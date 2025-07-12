@@ -11,9 +11,7 @@ export default function Panel() {
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
   
   const {
-    isAuthenticated,
-    user,
-    error
+    user
   } = useTwitchAuth();
 
   const handleShipSelect = (shipIndex: number) => {
@@ -56,17 +54,7 @@ export default function Panel() {
         ) }
       </section>
       <footer>
-        {isAuthenticated && user && (
-          <div className="user-status">
-            <span>Welcome, {user.displayName || user.id}!</span>
-            <span className="role-badge">{user.role.toUpperCase()}</span>
-          </div>
-        )}
-        {error && (
-          <div className="error-status">
-            <span>Not connected to Twitch</span>
-          </div>
-        )}
+        <span>User: {user?.opaqueId || 'Loading...'}</span>
       </footer>
     </main>
   )
