@@ -81,9 +81,9 @@ wss.on('connection', socket => {
         return;
       }
 
-      // Handle user data messages
+      // Handle user data messages (keystroke data)
       if (message.type === 'user_data') {
-        const { username, userId, opaqueId, shipKey, keyPressed, keyActive } = message;
+        const { username, userId, opaqueId, keyPressed, keyActive } = message;
         
         // Filter out invalid users (no Twitch username or names starting with "Anon_")
         if (!username || username.startsWith('Anon_')) {
@@ -95,16 +95,39 @@ wss.on('connection', socket => {
         players[playerId].twitchUsername = username;
         players[playerId].twitchUserId = userId;
         players[playerId].twitchOpaqueId = opaqueId;
-        players[playerId].shipKey = shipKey;
         players[playerId].keyPressed = keyPressed;
         players[playerId].keyActive = keyActive;
         
         console.log(`[server] updated user data for ${username}:`, {
           userId,
           opaqueId,
-          shipKey,
           keyPressed,
           keyActive
+        });
+        
+        return;
+      }
+
+      // Handle ship selection messages (separate from keystroke data)
+      if (message.type === 'ship_selection') {
+        const { username, userId, opaqueId, shipKey } = message;
+        
+        // Filter out invalid users (no Twitch username or names starting with "Anon_")
+        if (!username || username.startsWith('Anon_')) {
+          console.log(`[server] filtering out anonymous user: ${username || 'no username'}`);
+          return;
+        }
+        
+        // Update player ship selection
+        players[playerId].twitchUsername = username;
+        players[playerId].twitchUserId = userId;
+        players[playerId].twitchOpaqueId = opaqueId;
+        players[playerId].shipKey = shipKey;
+        
+        console.log(`[server] updated ship selection for ${username}:`, {
+          userId,
+          opaqueId,
+          shipKey
         });
         
         return;
