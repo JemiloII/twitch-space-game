@@ -24,6 +24,9 @@ declare global {
           onFollow: (callback: (didFollow: boolean, channelName: string) => void) => void;
           requestIdShare: () => void;
         };
+        identity: {
+          onChanged: (callback: () => void) => void;
+        };
         features: {
           isBitsEnabled: boolean;
           isChatEnabled: boolean;
@@ -35,6 +38,7 @@ declare global {
           opaqueId: string;
           role: string;
           sessionToken: string;
+          isLinked: boolean;
           subscriptionStatus?: {
             tier: string;
           };
