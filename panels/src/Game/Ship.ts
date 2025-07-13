@@ -1,6 +1,6 @@
-import Phaser, { Scene, Physics } from 'phaser';
-import { type Controls } from './Controls.ts';
+import { Scene, Physics } from 'phaser';
 import { RecolorTexture } from './RecolorTexture';
+import { LoadSubtexture } from './LoadSubtexture.ts';
 
 export type Ship = Physics.Matter.Sprite;
 
@@ -9,8 +9,17 @@ function colorHash(color: Record<string, string>) {
   return colorEntries.map(([from, to]) => `${from.slice(1)}_${to.slice(1)}`).join('_');
 }
 
-export function createShip(scene: Scene, x: number, y: number, color?: Record<string, string>): Ship {
-  let key = 'ship';
+export function createShip(
+  scene: Scene,
+  key: string = 'spaceShips_001.png',
+  spawn_x: number,
+  spawn_y: number,
+  color?: Record<string, string>
+): Ship {
+  if (!scene.textures.exists(key)) {
+    LoadSubtexture(scene, 'spritesheet', key);
+  }
+
   if (color) {
     key += `_${colorHash(color)}`;
     
@@ -19,8 +28,8 @@ export function createShip(scene: Scene, x: number, y: number, color?: Record<st
     }
   }
 
-  const ship = scene.matter.add.sprite(x, y, key)
-    .setScale(0.25)
+  const ship = scene.matter.add.sprite(spawn_x, spawn_y, key)
+    .setScale(0.125)
     .setOrigin(0.5)
     .setFrictionAir(0.025) // Match server configuration
     .setMass(1);
@@ -32,37 +41,3 @@ export function createShip(scene: Scene, x: number, y: number, color?: Record<st
   
   return ship;
 }
-
-// Physics configuration matching server
-const PHYSICS_CONFIG = {
-  rotationSpeed: 5,
-  forceMultiplier: 0.0005,
-  speed: 40
-};
-
-export function updateShipMovement(ship: Ship, cursors: Controls) {
-  const { left, rotateLeft, right, rotateRight, up } = cursors;
-  const leftRotation = left.isDown || rotateLeft.isDown;
-  const rightRotation = right.isDown || rotateRight.isDown;
-  
-  const tickRate = 1 / 60;
-
-  // Handle rotation to match server logic
-  if (leftRotation && !rightRotation) {
-    ship.setAngularVelocity(-PHYSICS_CONFIG.rotationSpeed);
-  } else if (rightRotation && !leftRotation) {
-    ship.setAngularVelocity(PHYSICS_CONFIG.rotationSpeed);
-  } else {
-    ship.setAngularVelocity(0);
-  }
-
-  if (up.isDown) {
-    const angle = ship.rotation;
-    const force = PHYSICS_CONFIG.speed * tickRate * PHYSICS_CONFIG.forceMultiplier;
-    ship.applyForce(new Phaser.Math.Vector2(
-      Math.cos(angle) * force,
-      Math.sin(angle) * force
-    ));
-  }
-}
-

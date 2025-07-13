@@ -21,9 +21,9 @@ export default class GameScene extends Scene {
   }
 
   preload() {
-    this.load.image('ship', 'ships/spaceShips_001.png');
     this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
     this.load.image('red', 'https://labs.phaser.io/assets/particles/red.png');
+    this.load.atlasXML('spritesheet', 'spritesheets/spritesheet.png', 'spritesheets/spritesheet.xml');
   }
 
   create() {
@@ -50,15 +50,7 @@ export default class GameScene extends Scene {
               '#BD3E3E': '#FFA811',
             };
 
-            this.players[id] = createShip(this, data.x, data.y, data.color);
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            this.add.particles('red', {
-              speed: 100,
-              scale: { start: 1, end: 0 },
-              blendMode: 'ADD',
-              follow: this.players[id]
-            });
+            this.players[id] = createShip(this, data.key, data.x, data.y, data.color);
 
             // Create username label above the player
             this.playerLabels[id] = this.add.text(data.x, data.y - 20, data.username, {

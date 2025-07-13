@@ -2782,7 +2782,7 @@
     }
   },
   "meta": {
-    "image": "sprites.png",
+    "image": "spritesheet.png",
     "scale": "1",
     "app": "xml_to_json_converter"
   }
