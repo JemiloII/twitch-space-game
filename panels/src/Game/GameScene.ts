@@ -16,7 +16,7 @@ export default class GameScene extends Scene {
 
   constructor() {
     super('Game');
-    Socket.connect('ws://localhost:3001');
+    Socket.connect();
     this.socket = Socket.get();
   }
 

@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import http from 'node:http';
+import fs from 'node:fs';
+import https from 'node:https';
 import cors from 'cors';
 import express from 'express';
 import { WebSocketServer } from 'ws';
@@ -7,7 +8,14 @@ import { sign, verify } from './token.js';
 import { createPlayerBody, removePlayerBody, updatePhysics, getPlayerSnapshot } from './physics.js';
 
 const app = express();
-const server = http.createServer(app);
+
+// Use the same certificates as Vite
+const httpsOptions = {
+  cert: fs.readFileSync('C:\\Certbot\\live\\game.shibiko.ai\\fullchain.pem'),
+  key: fs.readFileSync('C:\\Certbot\\live\\game.shibiko.ai\\privkey.pem')
+};
+
+const server = https.createServer(httpsOptions, app);
 const wss = new WebSocketServer({ server });
 
 const players = {}; // { socket.id: { body, input } }
@@ -130,4 +138,4 @@ setInterval(() => {
 app.use(cors());
 // app.use(express.static('public'));
 
-server.listen(3001, '0.0.0.0', () => console.log('Server running on :3001'));
+server.listen(2087, '0.0.0.0', () => console.log('Server running on https://game.shibiko.ai:2087'));
