@@ -48,19 +48,9 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
   
   // Twitch actions
   requestIdShare: () => {
-    console.log('=== requestIdShare called ===');
-    console.log('window.Twitch exists:', !!window.Twitch);
-    console.log('window.Twitch.ext exists:', !!(window.Twitch && window.Twitch.ext));
-    console.log('window.Twitch.ext.actions exists:', !!(window.Twitch && window.Twitch.ext && window.Twitch.ext.actions));
-    console.log('window.Twitch.ext.actions.requestIdShare exists:', !!(window.Twitch && window.Twitch.ext && window.Twitch.ext.actions && window.Twitch.ext.actions.requestIdShare));
-    
     if (window.Twitch && window.Twitch.ext) {
-      console.log('Full Twitch.ext object:', window.Twitch.ext);
-      console.log('Available actions:', window.Twitch.ext.actions);
-      console.log('Calling requestIdShare...');
       try {
-        const result = window.Twitch.ext.actions.requestIdShare();
-        console.log('requestIdShare result:', result);
+        window.Twitch.ext.actions.requestIdShare();
       } catch (error) {
         console.error('Error calling requestIdShare:', error);
       }
@@ -85,18 +75,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
   updateUserData: (authData, ext) => {
     const isLinked = Boolean(ext.viewer.isLinked);
     
-    console.log('=== updateUserData called ===');
-    console.log('Full authData object:', authData);
-    console.log('Full ext.viewer object:', ext.viewer);
-    console.log('Comparison data:', {
-      isLinked,
-      viewerId: ext.viewer.id,
-      opaqueId: ext.viewer.opaqueId,
-      helixToken: authData.helixToken,
-      viewerRole: ext.viewer.role,
-      viewerSessionToken: ext.viewer.sessionToken
-    });
-    
     const userData: TwitchUser = {
       id: isLinked ? ext.viewer.id : ext.viewer.opaqueId,
       opaqueId: ext.viewer.opaqueId,
@@ -104,7 +82,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
       displayName: undefined // Will be populated via Helix API if needed
     };
     
-    console.log('Setting user data:', userData);
     set({
       user: userData,
       isIdShared: isLinked
@@ -112,7 +89,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
     
     // If user is linked, we can get their display name via Helix API
     if (isLinked && authData.helixToken) {
-      console.log('Fetching display name for linked user:', ext.viewer.id);
       get().fetchUserDisplayName(ext.viewer.id, authData.helixToken, authData.clientId);
     }
   },
@@ -128,11 +104,9 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Helix API response:', data);
         if (data.data && data.data.length > 0) {
           const currentUser = get().user;
           if (currentUser) {
-            console.log('Setting display name:', data.data[0].display_name);
             set({
               user: {
                 ...currentUser,
@@ -150,22 +124,12 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
   },
   
   initializeTwitch: () => {
-    console.log('=== initializeTwitch called ===');
-    console.log('window.Twitch exists:', !!window.Twitch);
-    console.log('window.Twitch.ext exists:', !!(window.Twitch && window.Twitch.ext));
-    
     if (window?.Twitch?.ext) {
-      console.log('Found Twitch Extension API');
-      console.log('Full window.Twitch.ext object:', window.Twitch.ext);
       const { ext } = window.Twitch;
       let currentAuth: TwitchAuth | null = null;
-      
-      const store = get();
 
       // Handle authentication
       ext.onAuthorized(async (authData: TwitchAuth) => {
-        console.log('=== Twitch Extension Authorized ===');
-        console.log('Full authData object:', authData);
         currentAuth = authData;
         set({
           auth: authData,
@@ -174,7 +138,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
         
         // Check if user is linked and fetch display name directly
         if (ext.viewer.isLinked && authData.helixToken) {
-          console.log('User is linked, fetching display name for:', ext.viewer.id);
           const response = await fetch(`https://api.twitch.tv/helix/users?id=${ext.viewer.id}`, {
             headers: {
               'Authorization': `Extension ${authData.helixToken}`,
@@ -184,7 +147,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
           
           if (response.ok) {
             const data = await response.json();
-            console.log('Username:', data.data.at(0)?.display_name);
             
             const userData: TwitchUser = {
               id: ext.viewer.id,
@@ -213,18 +175,10 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
           });
         }
       });
-
-      // Handle identity changes (when user shares their ID)
-      console.log('ext.identity exists:', !!ext.identity);
-      console.log('ext.identity.onChanged exists:', !!(ext.identity && ext.identity.onChanged));
       
       if (ext.identity && ext.identity.onChanged) {
-        console.log('Setting up identity change listener');
         ext.identity.onChanged(async () => {
-          console.log('=== Identity changed - user may have shared their ID ===');
-          console.log('Current auth at time of identity change:', currentAuth);
           if (currentAuth && ext.viewer.isLinked) {
-            console.log('User is now linked, fetching display name for:', ext.viewer.id);
             const response = await fetch(`https://api.twitch.tv/helix/users?id=${ext.viewer.id}`, {
               headers: {
                 'Authorization': `Extension ${currentAuth.helixToken}`,
@@ -234,7 +188,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
             
             if (response.ok) {
               const data = await response.json();
-              console.log('Username after identity change:', data.data.at(0)?.display_name);
               
               const userData: TwitchUser = {
                 id: ext.viewer.id,
@@ -256,7 +209,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
 
       // Handle context changes
       ext.onContext((contextData: TwitchContext) => {
-        console.log('Twitch Context Changed:', contextData);
         set({ context: contextData });
       });
 
@@ -268,7 +220,6 @@ export const useTwitchStore = create<TwitchStore>((set, get) => ({
 
     } else {
       console.warn('Twitch Extension API not available');
-      console.log('window object:', window);
       set({ error: 'Twitch Extension API not available' });
     }
   }
