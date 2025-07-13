@@ -102,5 +102,45 @@ main {
     background: linear-gradient(0deg, #FF8A00 0%, #FF9F1A 100%);
     color: #F1F1F1;
     font-weight: bold;
+    padding: 0 10px;
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 12px;
+
+      .username {
+        font-weight: bold;
+        font-size: 13px;
+      }
+
+      .user-id {
+        font-size: 10px;
+        opacity: 0.8;
+      }
+
+      .share-id-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #F1F1F1;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 2px;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+          border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+    }
   }
 }

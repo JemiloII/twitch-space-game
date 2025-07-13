@@ -1,7 +1,7 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import Tabs from './Tabs/Tabs.tsx';
-import { useTwitchAuth } from '../hooks/useTwitchAuth';
+import { useTwitchStore } from '../stores/twitchStore';
 import './Panel.scss'
 
 export default function Panel() {
@@ -11,8 +11,26 @@ export default function Panel() {
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
   
   const {
-    user
-  } = useTwitchAuth();
+    user,
+    isIdShared,
+    requestIdShare,
+    auth,
+    isAuthenticated,
+    initializeTwitch
+  } = useTwitchStore();
+
+  // Initialize Twitch on component mount
+  useEffect(() => {
+    initializeTwitch();
+  }, [initializeTwitch]);
+
+  // Debug logging
+  console.log('Panel render:', {
+    user,
+    isIdShared,
+    isAuthenticated,
+    auth: auth ? { userId: auth.userId, clientId: auth.clientId } : null
+  });
 
   const handleShipSelect = (shipIndex: number) => {
     setSelectedShip(shipIndex);
@@ -54,7 +72,32 @@ export default function Panel() {
         ) }
       </section>
       <footer>
-        <span>User: {user?.opaqueId || 'Loading...'}</span>
+        <div className="user-info">
+          {user ? (
+            <>
+              <span className="username">
+                {user.displayName || (isIdShared ? `User_${user.id}` : `Anon_${user.opaqueId}`)}
+              </span>
+              <span className="user-id">
+                ID: {isIdShared ? user.id : user.opaqueId}
+              </span>
+              {!isIdShared && (
+                <button
+                  className="share-id-btn"
+                  onClick={() => {
+                    console.log('Share ID button clicked from Panel');
+                    requestIdShare();
+                  }}
+                  title="Share your Twitch ID to show your real username"
+                >
+                  Share ID
+                </button>
+              )}
+            </>
+          ) : (
+            <span>Loading user...</span>
+          )}
+        </div>
       </footer>
     </main>
   )
