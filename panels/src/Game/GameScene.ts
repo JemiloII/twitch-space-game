@@ -8,6 +8,7 @@ export default class GameScene extends Scene {
   playerId: string = '';
   players: Record<string, Ship> = {};
   playerLabels: Record<string, Phaser.GameObjects.Text> = {};
+  playerShipKeys: Record<string, string> = {}; // Track current ship key for each player
   socket!: WebSocket;
   cursors!: Controls;
   
@@ -44,22 +45,34 @@ export default class GameScene extends Scene {
         for (const id in message.players) {
           const data = message.players[id];
 
-          if (!this.players[id]) {
+          // Check if this is a new player or if the ship key has changed
+          const isNewPlayer = !this.players[id];
+          const shipKeyChanged = !isNewPlayer && this.playerShipKeys[id] !== data.key;
+
+          if (isNewPlayer || shipKeyChanged) {
+            // If ship key changed, destroy the old ship
+            if (shipKeyChanged) {
+              this.players[id].destroy();
+            }
+
             data.color = {
               '#AC3939': '#FF8A00',
               '#BD3E3E': '#FFA811',
             };
 
             this.players[id] = createShip(this, data.key, data.x, data.y, data.color);
+            this.playerShipKeys[id] = data.key; // Track the current ship key
 
-            // Create username label above the player
-            this.playerLabels[id] = this.add.text(data.x, data.y - 20, data.username, {
-              fontSize: '10px',
-              color: '#ffffff',
-              stroke: '#000000',
-              strokeThickness: 1,
-              align: 'center'
-            }).setOrigin(0.5);
+            // Create or update username label above the player
+            if (isNewPlayer) {
+              this.playerLabels[id] = this.add.text(data.x, data.y - 20, data.username, {
+                fontSize: '10px',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 1,
+                align: 'center'
+              }).setOrigin(0.5);
+            }
           }
 
           // Store server snapshot for interpolation
@@ -82,6 +95,20 @@ export default class GameScene extends Scene {
           if (this.playerLabels[id]) {
             this.playerLabels[id].x = this.players[id].x;
             this.playerLabels[id].y = this.players[id].y - 20;
+          }
+        }
+
+        // Clean up disconnected players
+        for (const id in this.players) {
+          if (!message.players[id]) {
+            this.players[id].destroy();
+            delete this.players[id];
+            delete this.playerShipKeys[id];
+            if (this.playerLabels[id]) {
+              this.playerLabels[id].destroy();
+              delete this.playerLabels[id];
+            }
+            delete this.serverSnapshots[id];
           }
         }
       }
