@@ -16,19 +16,20 @@ export function createShip(
   spawn_y: number,
   color?: Record<string, string>
 ): Ship {
+  let shipKey = key;
   if (!scene.textures.exists(key)) {
     LoadSubtexture(scene, 'spritesheet', key);
   }
 
   if (color) {
-    key += `_${colorHash(color)}`;
-    
-    if (!scene.textures.exists(key)) {
-      RecolorTexture(scene, 'ship', key, color);
+    const colorHashKey = `${key}_${colorHash(color)}`;
+    if (!scene.textures.exists(colorHashKey)) {
+      RecolorTexture(scene, key, colorHashKey, color);
+      shipKey = colorHashKey;
     }
   }
 
-  const ship = scene.matter.add.sprite(spawn_x, spawn_y, key)
+  const ship = scene.matter.add.sprite(spawn_x, spawn_y, shipKey)
     .setScale(0.125)
     .setOrigin(0.5)
     .setFrictionAir(0.025) // Match server configuration
