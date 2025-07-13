@@ -75,13 +75,23 @@ export function updatePhysics(players) {
 export function getPlayerSnapshot(players) {
   const snapshot = {};
   for (const id in players) {
-    const body = players[id].body;
-    snapshot[id] = {
-      x: body.position.x,
-      y: body.position.y,
-      rotation: body.angle,
-      username: players[id].username
-    };
+    const player = players[id];
+    const body = player.body;
+    
+    // Only include players with valid Twitch usernames
+    if (player.twitchUsername && !player.twitchUsername.startsWith('Anon_')) {
+      snapshot[id] = {
+        x: body.position.x,
+        y: body.position.y,
+        rotation: body.angle,
+        username: player.twitchUsername,
+        twitchUserId: player.twitchUserId,
+        twitchOpaqueId: player.twitchOpaqueId,
+        key: player.shipKey,
+        keyPressed: player.keyPressed,
+        keyActive: player.keyActive
+      };
+    }
   }
   return snapshot;
 }

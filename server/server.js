@@ -50,6 +50,12 @@ wss.on('connection', socket => {
             body: body,
             // For now, use the first 6 chars of ID as username
             username: playerId.substring(0, 6),
+            twitchUsername: null,
+            twitchUserId: null,
+            twitchOpaqueId: null,
+            shipKey: null,
+            keyPressed: null,
+            keyActive: false,
             input: {
               up: false,
               down: false,
@@ -72,6 +78,35 @@ wss.on('connection', socket => {
       // Ensure input is only accepted after a successful handshake
       if (!playerId || !players[playerId]) {
         console.warn('[server] rejecting message without handshake');
+        return;
+      }
+
+      // Handle user data messages
+      if (message.type === 'user_data') {
+        const { username, userId, opaqueId, shipKey, keyPressed, keyActive } = message;
+        
+        // Filter out invalid users (no Twitch username or names starting with "Anon_")
+        if (!username || username.startsWith('Anon_')) {
+          console.log(`[server] filtering out anonymous user: ${username || 'no username'}`);
+          return;
+        }
+        
+        // Update player with Twitch data
+        players[playerId].twitchUsername = username;
+        players[playerId].twitchUserId = userId;
+        players[playerId].twitchOpaqueId = opaqueId;
+        players[playerId].shipKey = shipKey;
+        players[playerId].keyPressed = keyPressed;
+        players[playerId].keyActive = keyActive;
+        
+        console.log(`[server] updated user data for ${username}:`, {
+          userId,
+          opaqueId,
+          shipKey,
+          keyPressed,
+          keyActive
+        });
+        
         return;
       }
 
