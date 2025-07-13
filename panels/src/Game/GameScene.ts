@@ -15,6 +15,14 @@ export default class GameScene extends Scene {
   // For smooth interpolation
   private serverSnapshots: Record<string, { x: number; y: number; rotation: number; timestamp: number }> = {};
 
+  // Calculate label offset based on ship size
+  private calculateLabelOffset(ship: Ship): number {
+    // Get the ship's display height (accounting for scale)
+    const shipHeight = ship.displayHeight;
+    // Position label above the ship with some padding
+    return -(shipHeight / 2) - 15; // Half ship height + 15px padding
+  }
+
   constructor() {
     super('Game');
     Socket.connect();
@@ -65,7 +73,8 @@ export default class GameScene extends Scene {
 
             // Create or update username label above the player
             if (isNewPlayer) {
-              this.playerLabels[id] = this.add.text(data.x, data.y - 20, data.username, {
+              const labelOffset = this.calculateLabelOffset(this.players[id]);
+              this.playerLabels[id] = this.add.text(data.x, data.y + labelOffset, data.username, {
                 fontSize: '10px',
                 color: '#ffffff',
                 stroke: '#000000',
@@ -93,8 +102,9 @@ export default class GameScene extends Scene {
 
           // Update username label position
           if (this.playerLabels[id]) {
+            const labelOffset = this.calculateLabelOffset(this.players[id]);
             this.playerLabels[id].x = this.players[id].x;
-            this.playerLabels[id].y = this.players[id].y - 20;
+            this.playerLabels[id].y = this.players[id].y + labelOffset;
           }
         }
 
