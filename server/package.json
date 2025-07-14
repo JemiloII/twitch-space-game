@@ -20,6 +20,7 @@
     "vite": "^7.0.2"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.9",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "matter-js": "^0.20.0",

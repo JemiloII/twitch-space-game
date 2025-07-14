@@ -6,6 +6,7 @@ import express from 'express';
 import { WebSocketServer } from 'ws';
 import { sign, verify } from './token.js';
 import { createPlayerBody, removePlayerBody, updatePhysics, getPlayerSnapshot } from './physics.js';
+import { initDatabase, getPlayerPreferences, savePlayerPreferences } from './database.js';
 
 const app = express();
 
@@ -21,10 +22,13 @@ const wss = new WebSocketServer({ server });
 const players = {}; // { socket.id: { body, input } }
 const disconnectedPlayers = {}; // { playerId: { player, timeoutId } }
 
+// Initialize database
+await initDatabase();
+
 wss.on('connection', socket => {
   let playerId = undefined;
 
-  socket.on('message', raw => {
+  socket.on('message', async raw => {
     try {
       const message = JSON.parse(raw.toString());
       if (message.type === 'handshake') {
@@ -130,6 +134,14 @@ wss.on('connection', socket => {
           shipKey
         });
         
+        // Save preferences to database
+        try {
+          await savePlayerPreferences(userId, username, opaqueId, shipKey);
+          console.log(`[server] saved preferences to database for ${username}`);
+        } catch (error) {
+          console.error(`[server] error saving preferences for ${username}:`, error);
+        }
+        
         return;
       }
 
@@ -194,6 +206,46 @@ setInterval(() => {
 }, 1000 / 60);
 
 app.use(cors());
+app.use(express.json());
 // app.use(express.static('public'));
+
+// API endpoint to get player data
+app.get('/api/players', async (req, res) => {
+  try {
+    const { twitchUserId, twitchOpaqueId } = req.query;
+    
+    if (!twitchUserId && !twitchOpaqueId) {
+      return res.status(400).json({ error: 'Either twitchUserId or twitchOpaqueId is required' });
+    }
+    
+    const playerData = await getPlayerPreferences(twitchUserId, twitchOpaqueId);
+    res.json(playerData);
+  } catch (error) {
+    console.error('[api] Error getting player data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// API endpoint to save player data
+app.post('/api/players', async (req, res) => {
+  try {
+    const { twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors } = req.body;
+    
+    if (!twitchUserId && !twitchOpaqueId) {
+      return res.status(400).json({ error: 'Either twitchUserId or twitchOpaqueId is required' });
+    }
+    
+    const success = await savePlayerPreferences(twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors);
+    
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Failed to save player data' });
+    }
+  } catch (error) {
+    console.error('[api] Error saving player data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 server.listen(2087, '0.0.0.0', () => console.log('Server running on https://game.shibiko.ai:2087'));
