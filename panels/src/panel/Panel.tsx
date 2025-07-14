@@ -29,10 +29,24 @@ export default function Panel() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      setKeyStates(prev => ({ ...prev, [event.key]: true }));
+      // Normalize key to prevent modifier keys from affecting letters
+      let key = event.key;
+      
+      // Convert uppercase letters to lowercase
+      if (key.length === 1 && key >= 'A' && key <= 'Z') {
+        key = key.toLowerCase();
+      }
+      
+      setKeyStates(prev => ({ ...prev, [key]: true }));
     };
+    
     const handleKeyUp = (event: KeyboardEvent) => {
-      setKeyStates(prev => ({ ...prev, [event.key]: false }));
+      let { key } = event;
+      if (key.length === 1 && key >= 'A' && key <= 'Z') {
+        key = key.toLowerCase();
+      }
+      
+      setKeyStates(prev => ({ ...prev, [key]: false }));
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -81,7 +95,6 @@ export default function Panel() {
       username: user?.displayName,
       userId: user?.id,
       opaqueId: user?.opaqueId,
-      shipKey: getShipFilename(selectedShip),
       keyPressed: pressedKeys.join(','),
       keyActive: pressedKeys.length > 0
     };
@@ -90,17 +103,32 @@ export default function Panel() {
     send(userData);
   };
 
+  const sendShipSelectionToServer = () => {
+    if (!isValidUser()) return;
+    
+    const shipData = {
+      type: 'ship_selection',
+      username: user?.displayName,
+      userId: user?.id,
+      opaqueId: user?.opaqueId,
+      shipKey: getShipFilename(selectedShip)
+    };
+    
+    console.log('Sending ship selection to server:', shipData);
+    send(shipData);
+  };
+
   const sendInputToServer = () => {
     if (!isValidUser()) return;
     
-    // Map key states to movement input
+    // Map key states to movement input (keys are now normalized to lowercase)
     const inputData = {
-      up: keyStates['w'] || keyStates['W'] || keyStates['ArrowUp'],
-      down: keyStates['s'] || keyStates['S'] || keyStates['ArrowDown'],
-      left: keyStates['a'] || keyStates['A'] || keyStates['ArrowLeft'],
-      right: keyStates['d'] || keyStates['D'] || keyStates['ArrowRight'],
-      rotateLeft: keyStates['q'] || keyStates['Q'],
-      rotateRight: keyStates['e'] || keyStates['E'],
+      up: keyStates['w'] || keyStates['ArrowUp'],
+      down: keyStates['s'] || keyStates['ArrowDown'],
+      left: keyStates['a'] || keyStates['ArrowLeft'],
+      right: keyStates['d'] || keyStates['ArrowRight'],
+      rotateLeft: keyStates['q'],
+      rotateRight: keyStates['e'],
       space: keyStates[' '],
       shift: keyStates['Shift']
     };
@@ -109,11 +137,16 @@ export default function Panel() {
     send(inputData);
   };
 
-  // Send user data to server when user, ship selection, or keystrokes change
+  // Send user data to server when user or keystrokes change
   useEffect(() => {
     sendUserDataToServer();
     sendInputToServer();
-  }, [user, selectedShip, keyStates, isIdShared]);
+  }, [user, keyStates, isIdShared]);
+
+  // Send ship selection to server only when ship selection changes
+  useEffect(() => {
+    sendShipSelectionToServer();
+  }, [user, selectedShip, isIdShared]);
 
   const handleShipSelect = (shipIndex: number) => {
     setSelectedShip(shipIndex);
