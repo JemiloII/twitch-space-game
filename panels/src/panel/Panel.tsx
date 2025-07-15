@@ -11,6 +11,7 @@ export default function Panel() {
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
   const [keyStates, setKeyStates] = useState<Record<string, boolean>>({});
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   
   const {
     auth,
@@ -26,6 +27,48 @@ export default function Panel() {
     initializeTwitch();
     connect(); // Initialize socket connection
   }, [initializeTwitch]);
+
+  // Load player preferences when user is available
+  useEffect(() => {
+    const loadPlayerPreferences = async () => {
+      if (!user || preferencesLoaded) return;
+      
+      try {
+        const params = new URLSearchParams();
+        if (user.id && isIdShared) {
+          params.append('twitchUserId', user.id);
+        }
+        if (user.opaqueId) {
+          params.append('twitchOpaqueId', user.opaqueId);
+        }
+        
+        const response = await fetch(`https://game.shibiko.ai:2087/api/players?${params}`);
+        if (response.ok) {
+          const preferences = await response.json();
+          
+          console.log('API Response:', preferences);
+          
+          // Extract ship number from filename (e.g., "spaceShips_001.png" -> 1)
+          const shipMatch = preferences.selectedShip.match(/spaceShips_00(\d)\.png/);
+          if (shipMatch) {
+            const shipNumber = parseInt(shipMatch[1]);
+            console.log('Setting selected ship to:', shipNumber);
+            setSelectedShip(shipNumber);
+          }
+          
+          console.log('Loaded player preferences:', preferences);
+          setPreferencesLoaded(true);
+        } else {
+          console.error('Failed to load preferences:', response.status);
+          setPreferencesLoaded(true); // Still mark as loaded to prevent infinite loops
+        }
+      } catch (error) {
+        console.error('Error loading player preferences:', error);
+      }
+    };
+    
+    loadPlayerPreferences();
+  }, [user, isIdShared, preferencesLoaded]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -143,10 +186,12 @@ export default function Panel() {
     sendInputToServer();
   }, [user, keyStates, isIdShared]);
 
-  // Send ship selection to server only when ship selection changes
+  // Send ship selection to server only when ship selection changes (but not during initial load)
   useEffect(() => {
-    sendShipSelectionToServer();
-  }, [user, selectedShip, isIdShared]);
+    if (preferencesLoaded) {
+      sendShipSelectionToServer();
+    }
+  }, [user, selectedShip, isIdShared, preferencesLoaded]);
 
   const handleShipSelect = (shipIndex: number) => {
     setSelectedShip(shipIndex);

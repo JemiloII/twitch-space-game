@@ -45,9 +45,9 @@ wss.on('connection', socket => {
         if (disconnectedPlayers[playerId]) {
           console.log('[server] player reconnecting:', playerId);
           clearTimeout(disconnectedPlayers[playerId].timeoutId);
-          players[playerId] = disconnectedPlayers[playerId].player;
           delete disconnectedPlayers[playerId];
         } else if (!players[playerId]) {
+          console.log('[server] creating new player:', playerId);
           const body = createPlayerBody();
           
           players[playerId] = {
@@ -60,6 +60,7 @@ wss.on('connection', socket => {
             shipKey: null,
             keyPressed: null,
             keyActive: false,
+            lastInputTime: Date.now(),
             input: {
               up: false,
               down: false,
@@ -165,6 +166,9 @@ wss.on('connection', socket => {
         space: !!message.space,
         shift: !!message.shift
       };
+      
+      // Update last input time
+      players[playerId].lastInputTime = Date.now();
     } catch (error) {
       console.error('[server] invalid message:', error);
     }
@@ -174,14 +178,16 @@ wss.on('connection', socket => {
     console.log('Socket closed for', playerId);
     if (playerId && players[playerId]) {
       const player = players[playerId];
-      delete players[playerId];
       
+      // Don't remove from active players immediately - keep them in game world
+      // Set a timeout to remove them after 2 minutes to handle lag/reconnection
       const timeoutId = setTimeout(() => {
         console.log('[server] removing player after timeout:', playerId);
         removePlayerBody(player.body);
+        delete players[playerId];
         delete disconnectedPlayers[playerId];
-      }, 60000 * 5);
-      console.log('[server] player disconnected, starting 60s timeout:', playerId);
+      }, 60000 * 2); // 2 minutes timeout
+      console.log('[server] player disconnected, starting 2min timeout:', playerId);
 
       disconnectedPlayers[playerId] = {
         player: player,
@@ -204,6 +210,31 @@ setInterval(() => {
     }));
   });
 }, 1000 / 60);
+
+// Check for inactive players every 30 seconds
+setInterval(() => {
+  const now = Date.now();
+  const inactivityTimeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+  
+  Object.keys(players).forEach(playerId => {
+    const player = players[playerId];
+    const timeSinceLastInput = now - player.lastInputTime;
+    
+    if (timeSinceLastInput > inactivityTimeout) {
+      console.log(`[server] removing inactive player: ${playerId} (${player.twitchUsername || player.username}) - inactive for ${Math.round(timeSinceLastInput / 1000)}s`);
+      
+      // Remove player body and clean up
+      removePlayerBody(player.body);
+      delete players[playerId];
+      
+      // Also remove from disconnected players if they were there
+      if (disconnectedPlayers[playerId]) {
+        clearTimeout(disconnectedPlayers[playerId].timeoutId);
+        delete disconnectedPlayers[playerId];
+      }
+    }
+  });
+}, 30000); // Check every 30 seconds
 
 app.use(cors());
 app.use(express.json());
