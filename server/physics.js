@@ -89,7 +89,8 @@ export function getPlayerSnapshot(players) {
         twitchOpaqueId: player.twitchOpaqueId,
         key: player.shipKey,
         keyPressed: player.keyPressed,
-        keyActive: player.keyActive
+        keyActive: player.keyActive,
+        input: player.input
       };
     }
   }

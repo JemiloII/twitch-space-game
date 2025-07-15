@@ -1,7 +1,7 @@
 import Phaser, { Scene } from 'phaser';
 import { createBackground } from './Background.ts';
 import { type Controls, setControls } from './Controls.ts';
-import { createShip, type Ship } from './Ship.ts';
+import { createShip, type Ship, updateShipThrusters, destroyShipThrusters } from './Ship.ts';
 import * as Socket from './Socket.ts';
 
 export default class GameScene extends Scene {
@@ -9,6 +9,7 @@ export default class GameScene extends Scene {
   players: Record<string, Ship> = {};
   playerLabels: Record<string, Phaser.GameObjects.Text> = {};
   playerShipKeys: Record<string, string> = {}; // Track current ship key for each player
+  playerThrusterStates: Record<string, boolean> = {}; // Track thruster states for each player
   socket!: WebSocket;
   cursors!: Controls;
   
@@ -33,6 +34,7 @@ export default class GameScene extends Scene {
     this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
     this.load.image('red', 'https://labs.phaser.io/assets/particles/red.png');
     this.load.atlasXML('spritesheet', 'spritesheets/spritesheet.png', 'spritesheets/spritesheet.xml');
+    this.load.atlas('thruster_fire', 'spritesheets/thruster_fire.png', 'spritesheets/thruster_fire.json');
   }
 
   create() {
@@ -60,6 +62,7 @@ export default class GameScene extends Scene {
           if (isNewPlayer || shipKeyChanged) {
             // If ship key changed, destroy the old ship
             if (shipKeyChanged) {
+              destroyShipThrusters(this.players[id]);
               this.players[id].destroy();
             }
 
@@ -106,14 +109,21 @@ export default class GameScene extends Scene {
             this.playerLabels[id].x = this.players[id].x;
             this.playerLabels[id].y = this.players[id].y + labelOffset;
           }
+
+          // Update thruster positions and animations
+          const isThrusting = data.input?.up || false;
+          this.playerThrusterStates[id] = isThrusting;
+          updateShipThrusters(this.players[id], isThrusting);
         }
 
         // Clean up disconnected players
         for (const id in this.players) {
           if (!message.players[id]) {
+            destroyShipThrusters(this.players[id]);
             this.players[id].destroy();
             delete this.players[id];
             delete this.playerShipKeys[id];
+            delete this.playerThrusterStates[id];
             if (this.playerLabels[id]) {
               this.playerLabels[id].destroy();
               delete this.playerLabels[id];
@@ -139,5 +149,21 @@ export default class GameScene extends Scene {
       space: space?.isDown ?? false,
       shift: shift?.isDown ?? false
     });
+
+    // Update thruster animations for all players
+    for (const playerId in this.players) {
+      const player = this.players[playerId];
+      
+      // For local player, check the cursor state directly
+      if (playerId === this.playerId) {
+        const isThrusting = up.isDown;
+        this.playerThrusterStates[playerId] = isThrusting;
+        updateShipThrusters(player, isThrusting);
+      } else {
+        // For other players, use the stored thruster state from server snapshots
+        const isThrusting = this.playerThrusterStates[playerId] || false;
+        updateShipThrusters(player, isThrusting);
+      }
+    }
   }
 }
