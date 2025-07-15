@@ -49,9 +49,15 @@
     "scale": 0.16,
     "thrusters": [
       {
-        "x": 0,
-        "y": -30,
-        "scale": 0.14,
+        "x": 6,
+        "y": -28,
+        "scale": 0.13,
+        "rotation": 0
+      },
+      {
+        "x": -6,
+        "y": -28,
+        "scale": 0.13,
         "rotation": 0
       }
     ]

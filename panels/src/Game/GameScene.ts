@@ -56,7 +56,6 @@ export default class GameScene extends Scene {
 
   preload() {
     this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
-    this.load.image('red', 'https://labs.phaser.io/assets/particles/red.png');
     this.load.atlasXML('spritesheet', 'spritesheets/spritesheet.png', 'spritesheets/spritesheet.xml');
     this.load.atlas('thruster_fire', 'spritesheets/thruster_fire.png', 'spritesheets/thruster_fire.json');
   }

@@ -9,7 +9,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 2053,
     cors: true,
-    open: '/panel',
+    open: '/game',
     allowedHosts: true,
     https: {
       cert: fs.readFileSync('C:\\Certbot\\live\\game.shibiko.ai\\fullchain.pem'),
