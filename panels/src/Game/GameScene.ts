@@ -16,12 +16,36 @@ export default class GameScene extends Scene {
   // For smooth interpolation
   private serverSnapshots: Record<string, { x: number; y: number; rotation: number; timestamp: number }> = {};
 
-  // Calculate label offset based on ship size
+  // Calculate label offset based on thruster flame position
   private calculateLabelOffset(ship: Ship): number {
-    // Get the ship's display height (accounting for scale)
+    // If thruster configs are available, calculate based on thruster flame position
+    if (ship.thrusterConfigs && ship.thrusterConfigs.length > 0) {
+      // Find the lowest thruster flame position (furthest from ship center)
+      let lowestThrusterY = 0;
+      
+      ship.thrusterConfigs.forEach(config => {
+        // Calculate the actual thruster position relative to ship
+        const thrusterBottomY = config.y;
+        
+        // Estimate flame extension based on thruster scale
+        // The thruster flame sprite extends approximately 64 pixels in original size
+        // We scale this by the thruster's scale factor
+        const flameExtension = 64 * config.scale;
+        
+        // Find the lowest point of all thruster flames
+        const thrusterFlameBottomY = thrusterBottomY - flameExtension;
+        if (thrusterFlameBottomY < lowestThrusterY) {
+          lowestThrusterY = thrusterFlameBottomY;
+        }
+      });
+      
+      // Position label above the lowest thruster flame with padding
+      return lowestThrusterY - 20; // 20px padding above flame
+    }
+    
+    // Fallback: position above ship if thrusters not loaded yet
     const shipHeight = ship.displayHeight;
-    // Position label above the ship with some padding
-    return -(shipHeight / 2) - 15; // Half ship height + 15px padding
+    return -(shipHeight / 2) - 15;
   }
 
   constructor() {

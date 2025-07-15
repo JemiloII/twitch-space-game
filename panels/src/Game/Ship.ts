@@ -17,7 +17,7 @@ async function loadThrusterConfigs(key: string): Promise<ThrusterConfig[]> {
   try {
     const response = await fetch('/json/ships.json');
     const ships = await response.json();
-    const ship = ships.find((s: any) => s.image.includes(key.replace('.png', '')));
+    const ship = ships.find((s: any) => s.subtexture?.includes(key.replace('.png', '')));
     return ship?.thrusters || [];
   } catch (error) {
     console.warn('Failed to load thruster configs:', error);
