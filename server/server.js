@@ -21,6 +21,7 @@ const wss = new WebSocketServer({ server });
 
 const players = {}; // { socket.id: { body, input } }
 const disconnectedPlayers = {}; // { playerId: { player, timeoutId } }
+const sleepingPlayers = {}; // { playerId: { player, sleepTime } } - for inactive players that can be reactivated
 
 // Initialize database
 await initDatabase();
@@ -43,11 +44,19 @@ wss.on('connection', socket => {
 
         playerId = id;
         if (disconnectedPlayers[playerId]) {
-          console.log('[server] player reconnecting:', playerId);
+          console.log('[server] player reconnecting from disconnectedPlayers:', playerId);
           clearTimeout(disconnectedPlayers[playerId].timeoutId);
           delete disconnectedPlayers[playerId];
+        } else if (sleepingPlayers[playerId]) {
+          console.log('[server] REACTIVATING sleeping player:', playerId);
+          // Restore sleeping player to active state
+          const sleepingPlayer = sleepingPlayers[playerId];
+          players[playerId] = sleepingPlayer.player;
+          players[playerId].lastInputTime = Date.now(); // Reset input time
+          delete sleepingPlayers[playerId];
+          console.log('[server] player successfully reactivated without refresh!');
         } else if (!players[playerId]) {
-          console.log('[server] creating new player:', playerId);
+          console.log('[server] creating new player (genuinely new or lost from system):', playerId);
           const body = createPlayerBody();
           
           players[playerId] = {
@@ -81,8 +90,24 @@ wss.on('connection', socket => {
       }
 
       // Ensure input is only accepted after a successful handshake
-      if (!playerId || !players[playerId]) {
-        console.warn('[server] rejecting message without handshake');
+      if (!playerId) {
+        console.warn('[server] rejecting message without handshake - no playerId');
+        return;
+      }
+      
+      // Check if player is in sleeping state and reactivate them
+      if (!players[playerId] && sleepingPlayers[playerId]) {
+        console.log('[server] REACTIVATING sleeping player via input:', playerId);
+        const sleepingPlayer = sleepingPlayers[playerId];
+        players[playerId] = sleepingPlayer.player;
+        players[playerId].lastInputTime = Date.now();
+        delete sleepingPlayers[playerId];
+        console.log('[server] player reactivated via input without refresh!');
+      }
+      
+      // If player is neither active nor sleeping, reject
+      if (!players[playerId]) {
+        console.warn('[server] rejecting message without handshake - player not found');
         return;
       }
 
@@ -214,27 +239,54 @@ setInterval(() => {
 // Check for inactive players every 30 seconds
 setInterval(() => {
   const now = Date.now();
-  const inactivityTimeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const inactivityTimeout = 1 * 60 * 1000; // 1 minute in milliseconds (reduced for testing)
   
   Object.keys(players).forEach(playerId => {
     const player = players[playerId];
     const timeSinceLastInput = now - player.lastInputTime;
     
     if (timeSinceLastInput > inactivityTimeout) {
-      console.log(`[server] removing inactive player: ${playerId} (${player.twitchUsername || player.username}) - inactive for ${Math.round(timeSinceLastInput / 1000)}s`);
+      console.log(`[server] INACTIVITY TIMEOUT: moving inactive player to sleeping state: ${playerId} (${player.twitchUsername || player.username}) - inactive for ${Math.round(timeSinceLastInput / 1000)}s`);
+      console.log(`[server] SOLUTION: Player moved to sleeping state and can reconnect without refresh`);
       
-      // Remove player body and clean up
-      removePlayerBody(player.body);
+      // Move player to sleeping state instead of completely removing
+      sleepingPlayers[playerId] = {
+        player: player,
+        sleepTime: Date.now()
+      };
+      
+      // Remove from active players but keep body for visual continuity
+      // Don't remove the physics body - let it stay in the world
       delete players[playerId];
       
       // Also remove from disconnected players if they were there
       if (disconnectedPlayers[playerId]) {
+        console.log(`[server] Also removing from disconnectedPlayers - player now in sleeping state`);
         clearTimeout(disconnectedPlayers[playerId].timeoutId);
         delete disconnectedPlayers[playerId];
       }
     }
   });
 }, 30000); // Check every 30 seconds
+
+// Clean up sleeping players after 30 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const sleepingTimeout = 30 * 60 * 1000; // 30 minutes in milliseconds
+  
+  Object.keys(sleepingPlayers).forEach(playerId => {
+    const sleepingPlayer = sleepingPlayers[playerId];
+    const timeSleeping = now - sleepingPlayer.sleepTime;
+    
+    if (timeSleeping > sleepingTimeout) {
+      console.log(`[server] removing sleeping player after 30min: ${playerId} (${sleepingPlayer.player.twitchUsername || sleepingPlayer.player.username})`);
+      
+      // Now actually remove the physics body and clean up completely
+      removePlayerBody(sleepingPlayer.player.body);
+      delete sleepingPlayers[playerId];
+    }
+  });
+}, 5 * 60 * 1000); // Check every 5 minutes
 
 app.use(cors());
 app.use(express.json());
