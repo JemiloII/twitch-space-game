@@ -24,8 +24,8 @@ export default class GameScene extends Scene {
       let lowestThrusterY = 0;
       
       ship.thrusterConfigs.forEach(config => {
-        // Calculate the actual thruster position relative to ship
-        const thrusterBottomY = config.y;
+        // Calculate the actual thruster position relative to ship, scaled by ship scale
+        const scaledThrusterBottomY = config.y * ship.scaleY;
         
         // Estimate flame extension based on thruster scale
         // The thruster flame sprite extends approximately 64 pixels in original size
@@ -33,7 +33,7 @@ export default class GameScene extends Scene {
         const flameExtension = 64 * config.scale;
         
         // Find the lowest point of all thruster flames
-        const thrusterFlameBottomY = thrusterBottomY - flameExtension;
+        const thrusterFlameBottomY = scaledThrusterBottomY - flameExtension;
         if (thrusterFlameBottomY < lowestThrusterY) {
           lowestThrusterY = thrusterFlameBottomY;
         }

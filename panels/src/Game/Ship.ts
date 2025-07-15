@@ -13,15 +13,21 @@ function colorHash(color: Record<string, string>) {
   return colorEntries.map(([from, to]) => `${from.slice(1)}_${to.slice(1)}`).join('_');
 }
 
-async function loadThrusterConfigs(key: string): Promise<ThrusterConfig[]> {
+async function loadShipData(key: string): Promise<{thrusters: ThrusterConfig[], scale: number}> {
   try {
     const response = await fetch('/json/ships.json');
     const ships = await response.json();
     const ship = ships.find((s: any) => s.subtexture?.includes(key.replace('.png', '')));
-    return ship?.thrusters || [];
+    return {
+      thrusters: ship?.thrusters || [],
+      scale: ship?.scale || 0.125 // fallback to original hardcoded value
+    };
   } catch (error) {
-    console.warn('Failed to load thruster configs:', error);
-    return [];
+    console.warn('Failed to load ship data:', error);
+    return {
+      thrusters: [],
+      scale: 0.125 // fallback to original hardcoded value
+    };
   }
 }
 
@@ -46,7 +52,7 @@ export function createShip(
   }
 
   const ship = scene.matter.add.sprite(spawn_x, spawn_y, shipKey)
-    .setScale(0.125)
+    .setScale(0.125) // Default scale, will be updated from JSON
     .setOrigin(0.5)
     .setFrictionAir(0.025) // Match server configuration
     .setMass(1) as Ship;
@@ -59,11 +65,15 @@ export function createShip(
   // Initialize thruster system
   ship.thrusterSystem = new ThrusterSystem(scene);
   
-  // Load and create thrusters asynchronously
-  loadThrusterConfigs(key).then(thrusterConfigs => {
-    ship.thrusterConfigs = thrusterConfigs;
-    if (thrusterConfigs.length > 0) {
-      ship.thrusterSystem!.createThrusters(ship, thrusterConfigs);
+  // Load ship data and apply scale and thrusters asynchronously
+  loadShipData(key).then(shipData => {
+    // Apply scale from JSON data
+    ship.setScale(shipData.scale);
+    
+    // Set up thrusters
+    ship.thrusterConfigs = shipData.thrusters;
+    if (shipData.thrusters.length > 0) {
+      ship.thrusterSystem!.createThrusters(ship, shipData.thrusters);
     }
   });
   

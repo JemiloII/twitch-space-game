@@ -2402,10 +2402,10 @@
     },
     "spaceShips_003.png": {
       "frame": {
-        "x": 850,
-        "y": 2065,
-        "w": 271,
-        "h": 169
+        "x": 1365,
+        "y": 1547,
+        "w": 202,
+        "h": 149
       },
       "rotated": false,
       "trimmed": false
@@ -2456,16 +2456,6 @@
         "y": 1387,
         "w": 212,
         "h": 160
-      },
-      "rotated": false,
-      "trimmed": false
-    },
-    "spaceShips_009.png": {
-      "frame": {
-        "x": 1365,
-        "y": 1547,
-        "w": 202,
-        "h": 149
       },
       "rotated": false,
       "trimmed": false

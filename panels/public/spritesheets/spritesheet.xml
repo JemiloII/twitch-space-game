@@ -239,13 +239,12 @@
 	<SubTexture name="spaceRockets_004.png" x="850" y="1327" width="271" height="738"/>
 	<SubTexture name="spaceShips_001.png" x="1365" y="1696" width="198" height="188"/>
 	<SubTexture name="spaceShips_002.png" x="896" y="0" width="252" height="216"/>
-	<SubTexture name="spaceShips_003.png" x="850" y="2065" width="271" height="169"/>
+	<SubTexture name="spaceShips_003.png" x="1365" y="1547" width="202" height="149"/>
 	<SubTexture name="spaceShips_004.png" x="1369" y="630" width="186" height="294"/>
 	<SubTexture name="spaceShips_005.png" x="440" y="800" width="342" height="301"/>
 	<SubTexture name="spaceShips_006.png" x="1365" y="1884" width="198" height="164"/>
 	<SubTexture name="spaceShips_007.png" x="896" y="305" width="228" height="163"/>
 	<SubTexture name="spaceShips_008.png" x="1365" y="1387" width="212" height="160"/>
-	<SubTexture name="spaceShips_009.png" x="1365" y="1547" width="202" height="149"/>
 	<SubTexture name="spaceStation_001.png" x="552" y="709" width="168" height="72"/>
 	<SubTexture name="spaceStation_002.png" x="431" y="1582" width="248" height="80"/>
 	<SubTexture name="spaceStation_003.png" x="1761" y="2197" width="80" height="56"/>
