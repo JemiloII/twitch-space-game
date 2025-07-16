@@ -108,6 +108,15 @@ wss.on('connection', socket => {
       // If player is neither active nor sleeping, reject
       if (!players[playerId]) {
         console.warn('[server] rejecting message without handshake - player not found');
+        // Send rejection message back to client to trigger reconnection
+        try {
+          socket.send(JSON.stringify({
+            type: 'rejection',
+            reason: 'rejecting message without handshake - player not found'
+          }));
+        } catch (error) {
+          console.error('[server] error sending rejection message:', error);
+        }
         return;
       }
 

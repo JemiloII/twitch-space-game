@@ -86,6 +86,14 @@ export function listen(handler: (message: any) => void) {
   socket.addEventListener('message', event => {
     try {
       const message = JSON.parse(event.data);
+      
+      // Check for rejection messages and trigger reconnection
+      if (message.type === 'rejection') {
+        console.warn('[socket] detected rejection from server - triggering reconnection:', message.reason);
+        forceReconnect();
+        return;
+      }
+      
       handler(message);
     } catch {
       console.warn('[socket] invalid JSON:', event.data);
@@ -104,6 +112,24 @@ export function send(data: any) {
   } catch {
     console.warn('[socket] send exception — skipping');
   }
+}
+
+// Function to force reconnection and re-handshake
+export function forceReconnect() {
+  console.log('[socket] forcing reconnection due to rejection...');
+  isConnected = false;
+  if (socket) {
+    socket.close();
+  }
+  // Clear stored credentials to force new handshake
+  localStorage.removeItem('playerId');
+  localStorage.removeItem('token');
+  playerId = null;
+  token = null;
+  // Reconnect after short delay
+  setTimeout(() => {
+    connect(socketUrl);
+  }, 100);
 }
 
 export function get(): WebSocket {
