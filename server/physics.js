@@ -1,12 +1,11 @@
 import Matter from 'matter-js';
+import { WORLD_CONFIG } from './config.js';
+import { updateProjectiles, checkCollisions, getProjectileSnapshot, getProjectileCount } from './projectiles.js';
 
 // Create matter.js engine
 const engine = Matter.Engine.create();
 engine.world.gravity.x = 0;
 engine.world.gravity.y = 0;
-
-const WORLD_WIDTH = 800;
-const WORLD_HEIGHT = 450;
 
 // Physics configuration
 const PHYSICS_CONFIG = {
@@ -16,7 +15,7 @@ const PHYSICS_CONFIG = {
   frictionAir: 0.025
 };
 
-export function createPlayerBody(x = 400, y = 300) {
+export function createPlayerBody(x = WORLD_CONFIG.width / 2, y = WORLD_CONFIG.height / 2) {
   const body = Matter.Bodies.circle(x, y, 10, {
     frictionAir: PHYSICS_CONFIG.frictionAir,
     inertia: Infinity
@@ -54,33 +53,48 @@ export function updatePhysics(players) {
       Matter.Body.applyForce(body, body.position, force);
     }
 
-    // World wrapping
+    // World wrapping (configurable world size)
     if (body.position.x < 0) {
-      Matter.Body.setPosition(body, { x: WORLD_WIDTH, y: body.position.y });
-    } else if (body.position.x > WORLD_WIDTH) {
+      Matter.Body.setPosition(body, { x: WORLD_CONFIG.width, y: body.position.y });
+    } else if (body.position.x > WORLD_CONFIG.width) {
       Matter.Body.setPosition(body, { x: 0, y: body.position.y });
     }
     
     if (body.position.y < 0) {
-      Matter.Body.setPosition(body, { x: body.position.x, y: WORLD_HEIGHT });
-    } else if (body.position.y > WORLD_HEIGHT) {
+      Matter.Body.setPosition(body, { x: body.position.x, y: WORLD_CONFIG.height });
+    } else if (body.position.y > WORLD_CONFIG.height) {
       Matter.Body.setPosition(body, { x: body.position.x, y: 0 });
     }
   }
+
+  // Update projectiles
+  updateProjectiles(tickRate);
+  
+  // Check projectile collisions
+  const hits = checkCollisions(players);
+  
+  // Process hits (for now, just log)
+  hits.forEach(hit => {
+    console.log(`[hit] Player ${hit.playerId} hit by projectile from ${hit.shooterId} for ${hit.damage} damage`);
+  });
 
   // Update physics engine
   Matter.Engine.update(engine, 1000 / 60);
 }
 
 export function getPlayerSnapshot(players) {
-  const snapshot = {};
+  const snapshot = {
+    players: {},
+    projectiles: getProjectileSnapshot()
+  };
+  
   for (const id in players) {
     const player = players[id];
     const body = player.body;
     
     // Only include players with valid Twitch usernames
     if (player.twitchUsername && !player.twitchUsername.startsWith('Anon_')) {
-      snapshot[id] = {
+      snapshot.players[id] = {
         x: body.position.x,
         y: body.position.y,
         rotation: body.angle,
@@ -97,4 +111,4 @@ export function getPlayerSnapshot(players) {
   return snapshot;
 }
 
-export { PHYSICS_CONFIG };
+export { PHYSICS_CONFIG, WORLD_CONFIG };

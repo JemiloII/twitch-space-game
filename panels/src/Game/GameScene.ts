@@ -1,7 +1,8 @@
 import Phaser, { Scene } from 'phaser';
 import { createBackground } from './Background.ts';
 import { type Controls, setControls } from './Controls.ts';
-import { createShip, type Ship, updateShipThrusters, destroyShipThrusters } from './Ship.ts';
+import { createShip, type Ship, updateShipThrusters, destroyShipThrusters, getShipGunCount } from './Ship.ts';
+import { ProjectileSystem } from './Projectile.ts';
 import * as Socket from './Socket.ts';
 
 export default class GameScene extends Scene {
@@ -12,6 +13,7 @@ export default class GameScene extends Scene {
   playerThrusterStates: Record<string, boolean> = {}; // Track thruster states for each player
   socket!: WebSocket;
   cursors!: Controls;
+  private projectileSystem!: ProjectileSystem;
   
   // For smooth interpolation
   private serverSnapshots: Record<string, { x: number; y: number; rotation: number; timestamp: number }> = {};
@@ -63,6 +65,9 @@ export default class GameScene extends Scene {
   create() {
     createBackground(this);
     this.cursors = setControls(this);
+    
+    // Initialize projectile system
+    this.projectileSystem = new ProjectileSystem(this);
 
     Socket.listen(message => {
       if (message.type === 'connected') {
@@ -75,8 +80,15 @@ export default class GameScene extends Scene {
       if (message.type === 'snapshot') {
         const now = Date.now();
         
-        for (const id in message.players) {
-          const data = message.players[id];
+        // Update projectiles
+        if (message.projectiles) {
+          this.projectileSystem.updateProjectiles(message.projectiles);
+        }
+        
+        // Handle players (note: message.players is now nested under message.players)
+        const playersData = message.players || {};
+        for (const id in playersData) {
+          const data = playersData[id];
 
           // Check if this is a new player or if the ship key has changed
           const isNewPlayer = !this.players[id];
@@ -141,7 +153,7 @@ export default class GameScene extends Scene {
 
         // Clean up disconnected players
         for (const id in this.players) {
-          if (!message.players[id]) {
+          if (!playersData[id]) {
             destroyShipThrusters(this.players[id]);
             this.players[id].destroy();
             delete this.players[id];
@@ -182,6 +194,11 @@ export default class GameScene extends Scene {
         const isThrusting = up.isDown;
         this.playerThrusterStates[playerId] = isThrusting;
         updateShipThrusters(player, isThrusting);
+        
+        // Log shooting status for debugging
+        if (space?.isDown && getShipGunCount(player) > 0) {
+          console.log(`[client] Local player shooting with ${getShipGunCount(player)} guns`);
+        }
       } else {
         // For other players, use the stored thruster state from server snapshots
         const isThrusting = this.playerThrusterStates[playerId] || false;

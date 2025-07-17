@@ -14,6 +14,18 @@
         "scale": 0.14,
         "rotation": 0
       }
+    ],
+    "guns": [
+      {
+        "x": 25,
+        "y": 0,
+        "rotation": 0,
+        "fireRate": 100,
+        "projectileSpeed": 800,
+        "projectileLifetime": 3000,
+        "damage": 1,
+        "spread": 0
+      }
     ]
   },
   {
@@ -36,6 +48,28 @@
         "y": -30,
         "scale": 0.125,
         "rotation": 0
+      }
+    ],
+    "guns": [
+      {
+        "x": 22,
+        "y": -5,
+        "rotation": 0,
+        "fireRate": 80,
+        "projectileSpeed": 900,
+        "projectileLifetime": 3500,
+        "damage": 1,
+        "spread": 0
+      },
+      {
+        "x": 22,
+        "y": 5,
+        "rotation": 0,
+        "fireRate": 80,
+        "projectileSpeed": 900,
+        "projectileLifetime": 3500,
+        "damage": 1,
+        "spread": 0
       }
     ]
   },
@@ -60,6 +94,18 @@
         "scale": 0.13,
         "rotation": 0
       }
+    ],
+    "guns": [
+      {
+        "x": 28,
+        "y": 0,
+        "rotation": 0,
+        "fireRate": 120,
+        "projectileSpeed": 750,
+        "projectileLifetime": 4000,
+        "damage": 2,
+        "spread": 0
+      }
     ]
   },
   {
@@ -76,6 +122,28 @@
         "y": -36,
         "scale": 0.13,
         "rotation": 0
+      }
+    ],
+    "guns": [
+      {
+        "x": 24,
+        "y": -8,
+        "rotation": 0,
+        "fireRate": 60,
+        "projectileSpeed": 1000,
+        "projectileLifetime": 2500,
+        "damage": 1,
+        "spread": 5
+      },
+      {
+        "x": 24,
+        "y": 8,
+        "rotation": 0,
+        "fireRate": 60,
+        "projectileSpeed": 1000,
+        "projectileLifetime": 2500,
+        "damage": 1,
+        "spread": 5
       }
     ]
   },
@@ -97,8 +165,20 @@
       {
         "x": 8,
         "y": -30,
-        "scale": 0.13,
+        "scale": 0.15,
         "rotation": 0
+      }
+    ],
+    "guns": [
+      {
+        "x": 20,
+        "y": 0,
+        "rotation": 0,
+        "fireRate": 50,
+        "projectileSpeed": 1200,
+        "projectileLifetime": 2000,
+        "damage": 1,
+        "spread": 0
       }
     ]
   },
@@ -120,6 +200,18 @@
         "scale": 0.1,
         "rotation": 0
       }
+    ],
+    "guns": [
+      {
+        "x": 26,
+        "y": 0,
+        "rotation": 0,
+        "fireRate": 110,
+        "projectileSpeed": 800,
+        "projectileLifetime": 3800,
+        "damage": 1,
+        "spread": 0
+      }
     ]
   },
   {
@@ -139,6 +231,18 @@
         "y": -30,
         "scale": 0.1,
         "rotation": 0
+      }
+    ],
+    "guns": [
+      {
+        "x": 23,
+        "y": 0,
+        "rotation": 0,
+        "fireRate": 70,
+        "projectileSpeed": 1100,
+        "projectileLifetime": 2200,
+        "damage": 1,
+        "spread": 3
       }
     ]
   },

@@ -2,10 +2,13 @@ import { Scene, Physics } from 'phaser';
 import { RecolorTexture } from './RecolorTexture';
 import { LoadSubtexture } from './LoadSubtexture.ts';
 import { ThrusterSystem, type ThrusterConfig } from './Thruster';
+import { GunSystem, type GunConfig } from './Gun';
 
 export type Ship = Physics.Matter.Sprite & {
   thrusterSystem?: ThrusterSystem;
   thrusterConfigs?: ThrusterConfig[];
+  gunSystem?: GunSystem;
+  gunConfigs?: GunConfig[];
 };
 
 function colorHash(color: Record<string, string>) {
@@ -13,19 +16,21 @@ function colorHash(color: Record<string, string>) {
   return colorEntries.map(([from, to]) => `${from.slice(1)}_${to.slice(1)}`).join('_');
 }
 
-async function loadShipData(key: string): Promise<{thrusters: ThrusterConfig[], scale: number}> {
+async function loadShipData(key: string): Promise<{thrusters: ThrusterConfig[], guns: GunConfig[], scale: number}> {
   try {
     const response = await fetch('/json/ships.json');
     const ships = await response.json();
     const ship = ships.find((s: any) => s.subtexture?.includes(key.replace('.png', '')));
     return {
       thrusters: ship?.thrusters || [],
+      guns: ship?.guns || [],
       scale: ship?.scale || 0.125 // fallback to original hardcoded value
     };
   } catch (error) {
     console.warn('Failed to load ship data:', error);
     return {
       thrusters: [],
+      guns: [],
       scale: 0.125 // fallback to original hardcoded value
     };
   }
@@ -65,7 +70,10 @@ export function createShip(
   // Initialize thruster system
   ship.thrusterSystem = new ThrusterSystem(scene);
   
-  // Load ship data and apply scale and thrusters asynchronously
+  // Initialize gun system
+  ship.gunSystem = new GunSystem(scene);
+  
+  // Load ship data and apply scale, thrusters, and guns asynchronously
   loadShipData(key).then(shipData => {
     // Apply scale from JSON data
     ship.setScale(shipData.scale);
@@ -74,6 +82,12 @@ export function createShip(
     ship.thrusterConfigs = shipData.thrusters;
     if (shipData.thrusters.length > 0) {
       ship.thrusterSystem!.createThrusters(ship, shipData.thrusters);
+    }
+    
+    // Set up guns
+    ship.gunConfigs = shipData.guns;
+    if (shipData.guns.length > 0) {
+      ship.gunSystem!.loadGunConfigs(shipData.guns);
     }
   });
   
@@ -96,4 +110,8 @@ export function destroyShipThrusters(ship: Ship): void {
   if (ship.thrusterSystem) {
     ship.thrusterSystem.destroyThrusters();
   }
+}
+
+export function getShipGunCount(ship: Ship): number {
+  return ship.gunSystem ? ship.gunSystem.getGunCount() : 0;
 }
