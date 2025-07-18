@@ -1,4 +1,4 @@
-import { Scene, GameObjects } from 'phaser';
+import { Scene, GameObjects, BlendModes } from 'phaser';
 
 export interface ProjectileData {
   id: string;
@@ -12,16 +12,20 @@ export interface ProjectileData {
   radius: number;
 }
 
+const TRAIL_SCALE = 0.03;
+const MIN_TRAIL = 0.25;
+const CORE_RATIO = 0.35;
+const CENTER_RATIO = 0.2;
+
 export class ProjectileSystem {
-  private scene: Scene;
-  private projectiles: Record<string, GameObjects.Container> = {};
+  scene: Scene;
+  projectiles: Record<string, GameObjects.Container> = {};
 
   constructor(scene: Scene) {
     this.scene = scene;
   }
 
   updateProjectiles(projectileData: Record<string, ProjectileData>): void {
-    // Remove old projectiles
     for (const id in this.projectiles) {
       if (!projectileData[id]) {
         this.projectiles[id].destroy();
@@ -29,72 +33,59 @@ export class ProjectileSystem {
       }
     }
 
-    // Add/update projectiles
     for (const id in projectileData) {
       const data = projectileData[id];
-      
+      const { x, y, vx, vy, radius } = data;
+      const velocity = Math.hypot(vx, vy);
+      const angle = Math.atan2(vy, vx);
+      const trailLength = Math.max(velocity * TRAIL_SCALE, MIN_TRAIL);
+      const coreSize = radius * CORE_RATIO;
+
       if (!this.projectiles[id]) {
-        // Create new streaky light projectile
-        const projectile = this.scene.add.container(data.x, data.y);
-        
-        // Calculate velocity magnitude and direction
-        const velocity = Math.sqrt(data.vx * data.vx + data.vy * data.vy);
-        const angle = Math.atan2(data.vy, data.vx);
-        
-        // Create streaky trail based on velocity (very short)
-        const trailLength = Math.max(velocity * 0.04, 4); // Even shorter trail
-        const coreSize = data.radius * 1.0;
-        
-        // Outer glow (largest, most transparent)
-        const outerGlow = this.scene.add.graphics();
-        outerGlow.fillGradientStyle(0x00FFFF, 0x00FFFF, 0x00FFFF, 0x00FFFF, 0.2, 0.2, 0.0, 0.0);
-        outerGlow.fillEllipse(0, 0, trailLength * 2, coreSize * 4);
-        outerGlow.setRotation(angle);
-        outerGlow.setBlendMode(Phaser.BlendModes.ADD);
-        
-        // Middle glow (medium size, more opaque)
-        const middleGlow = this.scene.add.graphics();
-        middleGlow.fillGradientStyle(0x00FFFF, 0x00FFFF, 0x00FFFF, 0x00FFFF, 0.6, 0.6, 0.0, 0.0);
-        middleGlow.fillEllipse(0, 0, trailLength * 1.2, coreSize * 2);
-        middleGlow.setRotation(angle);
-        middleGlow.setBlendMode(Phaser.BlendModes.ADD);
-        
-        // Core streak (bright center)
-        const core = this.scene.add.graphics();
-        core.fillGradientStyle(0xFFFFFF, 0xFFFFFF, 0x00FFFF, 0x00FFFF, 1.0, 1.0, 0.8, 0.8);
-        core.fillEllipse(0, 0, trailLength, coreSize);
-        core.setRotation(angle);
-        core.setBlendMode(Phaser.BlendModes.ADD);
-        
-        // Bright center point
-        const centerPoint = this.scene.add.graphics();
-        centerPoint.fillStyle(0xFFFFFF, 1.0);
-        centerPoint.fillCircle(0, 0, coreSize * 0.3);
-        centerPoint.setBlendMode(Phaser.BlendModes.ADD);
-        
-        // Add all elements to container
-        projectile.add([outerGlow, middleGlow, core, centerPoint]);
-        
-        this.projectiles[id] = projectile;
-        
-        console.log(`[client] Created streaky projectile visual ${id} at (${data.x.toFixed(1)}, ${data.y.toFixed(1)}) vel=${velocity.toFixed(1)} trail=${trailLength.toFixed(1)}px`);
+        const container = this.scene.add.container(x, y);
+
+        container.add([
+          this.makeTrailGlow(trailLength * 1.8, coreSize * 3, angle, 0.2),
+          this.makeTrailGlow(trailLength * 1.1, coreSize * 1.5, angle, 0.6),
+          this.makeCore(trailLength, coreSize, angle),
+          this.makeCenter(coreSize)
+        ]);
+
+        this.projectiles[id] = container;
       } else {
-        // Update existing projectile position
-        this.projectiles[id].x = data.x;
-        this.projectiles[id].y = data.y;
-        
-        // Update rotation based on velocity
-        const angle = Math.atan2(data.vy, data.vx);
-        const velocity = Math.sqrt(data.vx * data.vx + data.vy * data.vy);
-        
-        // Update all child graphics rotations
-        this.projectiles[id].list.forEach((child, index) => {
-          if (index < 3) { // First 3 elements need rotation update
-            (child as GameObjects.Graphics).setRotation(angle);
-          }
-        });
+        const projectile = this.projectiles[id];
+        projectile.setPosition(x, y);
+        for (let i = 0; i < 3; i++) {
+          (projectile.list[i] as GameObjects.Graphics).setRotation(angle);
+        }
       }
     }
+  }
+
+  makeTrailGlow(width: number, height: number, angle: number, alpha: number): GameObjects.Graphics {
+    const g = this.scene.add.graphics();
+    g.fillGradientStyle(0x00ffff, 0x00ffff, 0x00ffff, 0x00ffff, alpha, alpha, 0, 0);
+    g.fillEllipse(0, 0, width, height);
+    g.setRotation(angle);
+    g.setBlendMode(BlendModes.ADD);
+    return g;
+  }
+
+  makeCore(width: number, height: number, angle: number): GameObjects.Graphics {
+    const g = this.scene.add.graphics();
+    g.fillGradientStyle(0xffffff, 0xffffff, 0x00ffff, 0x00ffff, 1.0, 1.0, 0.8, 0.8);
+    g.fillEllipse(0, 0, width, height);
+    g.setRotation(angle);
+    g.setBlendMode(BlendModes.ADD);
+    return g;
+  }
+
+  makeCenter(coreSize: number): GameObjects.Graphics {
+    const g = this.scene.add.graphics();
+    g.fillStyle(0xffffff, 1.0);
+    g.fillCircle(0, 0, coreSize * CENTER_RATIO);
+    g.setBlendMode(BlendModes.ADD);
+    return g;
   }
 
   destroyProjectiles(): void {
