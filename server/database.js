@@ -10,7 +10,7 @@ export async function initDatabase() {
   try {
     // Create players table to store player preferences
     await client.execute(`
-      CREATE TABLE IF NOT EXISTS player_preferences (
+      CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         twitch_user_id TEXT UNIQUE,
         twitch_username TEXT,
@@ -24,11 +24,11 @@ export async function initDatabase() {
 
     // Create index for faster lookups
     await client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_twitch_user_id ON player_preferences(twitch_user_id)
+      CREATE INDEX IF NOT EXISTS idx_twitch_user_id ON players(twitch_user_id)
     `);
 
     await client.execute(`
-      CREATE INDEX IF NOT EXISTS idx_twitch_opaque_id ON player_preferences(twitch_opaque_id)
+      CREATE INDEX IF NOT EXISTS idx_twitch_opaque_id ON players(twitch_opaque_id)
     `);
 
     console.log('[database] Database initialized successfully');
@@ -38,14 +38,14 @@ export async function initDatabase() {
 }
 
 // Get player preferences by Twitch user ID or opaque ID
-export async function getPlayerPreferences(twitchUserId, twitchOpaqueId) {
+export async function getPlayer(twitchUserId, twitchOpaqueId) {
   try {
     let result;
     
     // First try to find by Twitch user ID (for linked accounts)
     if (twitchUserId) {
       result = await client.execute({
-        sql: 'SELECT * FROM player_preferences WHERE twitch_user_id = ?',
+        sql: 'SELECT * FROM players WHERE twitch_user_id = ?',
         args: [twitchUserId]
       });
     }
@@ -53,7 +53,7 @@ export async function getPlayerPreferences(twitchUserId, twitchOpaqueId) {
     // If not found and we have an opaque ID, try that
     if ((!result || result.rows.length === 0) && twitchOpaqueId) {
       result = await client.execute({
-        sql: 'SELECT * FROM player_preferences WHERE twitch_opaque_id = ?',
+        sql: 'SELECT * FROM players WHERE twitch_opaque_id = ?',
         args: [twitchOpaqueId]
       });
     }
@@ -84,14 +84,14 @@ export async function getPlayerPreferences(twitchUserId, twitchOpaqueId) {
 }
 
 // Save or update player preferences
-export async function savePlayerPreferences(twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors = {}) {
+export async function savePlayer(twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors = {}) {
   try {
     const colorsJson = JSON.stringify(shipColors);
     
     // Use UPSERT (INSERT OR REPLACE) to handle both new and existing players
     await client.execute({
       sql: `
-        INSERT INTO player_preferences (twitch_user_id, twitch_username, twitch_opaque_id, selected_ship, ship_colors, last_updated)
+        INSERT INTO players (twitch_user_id, twitch_username, twitch_opaque_id, selected_ship, ship_colors, last_updated)
         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(twitch_user_id) DO UPDATE SET
           twitch_username = excluded.twitch_username,
@@ -116,9 +116,9 @@ export async function savePlayerPreferences(twitchUserId, twitchUsername, twitch
 }
 
 // Get all player preferences (for debugging/admin purposes)
-export async function getAllPlayerPreferences() {
+export async function getAllPlayers() {
   try {
-    const result = await client.execute('SELECT * FROM player_preferences ORDER BY last_updated DESC');
+    const result = await client.execute('SELECT * FROM players ORDER BY last_updated DESC');
     return result.rows.map(row => ({
       id: row.id,
       twitchUserId: row.twitch_user_id,
@@ -136,10 +136,10 @@ export async function getAllPlayerPreferences() {
 }
 
 // Clean up old preferences (optional - for maintenance)
-export async function cleanupOldPreferences(daysOld = 30) {
+export async function cleanupOld(daysOld = 30) {
   try {
     const result = await client.execute({
-      sql: 'DELETE FROM player_preferences WHERE last_updated < datetime("now", "-' + daysOld + ' days")',
+      sql: 'DELETE FROM players WHERE last_updated < datetime("now", "-' + daysOld + ' days")',
       args: []
     });
     

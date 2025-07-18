@@ -11,7 +11,7 @@ export default function Panel() {
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
   const [keyStates, setKeyStates] = useState<Record<string, boolean>>({});
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [preferencesLoaded, setLoaded] = useState(false);
   
   const {
     auth,
@@ -30,7 +30,7 @@ export default function Panel() {
 
   // Load player preferences when user is available
   useEffect(() => {
-    const loadPlayerPreferences = async () => {
+    const loadPlayer = async () => {
       if (!user || preferencesLoaded) return;
       
       try {
@@ -57,17 +57,17 @@ export default function Panel() {
           }
           
           console.log('Loaded player preferences:', preferences);
-          setPreferencesLoaded(true);
+          setLoaded(true);
         } else {
           console.error('Failed to load preferences:', response.status);
-          setPreferencesLoaded(true); // Still mark as loaded to prevent infinite loops
+          setLoaded(true); // Still mark as loaded to prevent infinite loops
         }
       } catch (error) {
         console.error('Error loading player preferences:', error);
       }
     };
     
-    loadPlayerPreferences();
+    loadPlayer();
   }, [user, isIdShared, preferencesLoaded]);
 
   useEffect(() => {
