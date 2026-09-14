@@ -1,6 +1,8 @@
 # Twitch Space Game
 Vite + Phaser + Typescript + Twitch Extension API
 
+See the [fix list](FIXES.md) for simple notes and a link to each change on GitHub.
+
 ## Getting Started
 Run the server and the page in two terminals, starting in this folder:
 
