@@ -69,7 +69,7 @@ export default class GameScene extends Scene {
     // Initialize projectile system
     this.projectileSystem = new ProjectileSystem(this);
 
-    Socket.listen(message => {
+    const stopListening = Socket.listen(message => {
       if (message.type === 'connected') {
         this.playerId = message.id;
         localStorage.setItem('playerId', message.id);
@@ -167,6 +167,10 @@ export default class GameScene extends Scene {
           }
         }
       }
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      stopListening();
+      this.projectileSystem.destroyProjectiles();
     });
   }
 
