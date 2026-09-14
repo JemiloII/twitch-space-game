@@ -2,6 +2,8 @@ import { getSocketUrl } from './Backend';
 
 type MessageHandler = (message: any) => void;
 const listeners = new Set<MessageHandler>();
+type StateType = 'user_data' | 'ship_selection' | 'input';
+const latestState = new Map<StateType, Record<string, unknown>>();
 let isConnected = false;
 let playerId = localStorage.getItem('playerId');
 let token = localStorage.getItem('token');
@@ -46,6 +48,10 @@ export function connect(url: string = socketUrl): WebSocket {
       localStorage.setItem('token', message.token);
       isConnected = true;
       lastConnection = message;
+      for (const type of ['user_data', 'ship_selection', 'input'] as const) {
+        const data = latestState.get(type);
+        if (data) send(data);
+      }
     }
     for (const handler of listeners) deliver(handler, message);
   });
@@ -81,6 +87,17 @@ export function forceReconnect() {
   token = null;
   socket?.close();
   scheduleReconnect(100);
+}
+
+// Keep only the newest state, so a reconnect never replays old key presses.
+export function sendLatest(type: StateType, data: Record<string, unknown> | null) {
+  if (data === null) {
+    latestState.delete(type);
+    return;
+  }
+  const message = { ...data, type };
+  latestState.set(type, message);
+  send(message);
 }
 
 export function get(): WebSocket { return socket; }

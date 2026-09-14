@@ -2,7 +2,7 @@ import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import Tabs from './Tabs/Tabs.tsx';
 import { useTwitchStore } from '../stores/twitchStore';
-import { connect, send } from '../Game/Socket';
+import { connect, listen, sendLatest } from '../Game/Socket';
 import { getApiUrl } from '../Game/Backend';
 import './Panel.scss'
 
@@ -13,6 +13,7 @@ export default function Panel() {
   const [selectedShip, setSelectedShip] = useState<number>(ships[0]);
   const [keyStates, setKeyStates] = useState<Record<string, boolean>>({});
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [connectionError, setConnectionError] = useState('');
   
   const {
     auth,
@@ -27,6 +28,10 @@ export default function Panel() {
   useEffect(() => {
     initializeTwitch();
     connect(); // Initialize socket connection
+    return listen(message => {
+      if (message.type === 'auth_error' || message.type === 'error') setConnectionError(message.reason);
+      if (message.type === 'connected') setConnectionError('');
+    });
   }, [initializeTwitch]);
 
   // Load player preferences when user is available
@@ -115,89 +120,39 @@ export default function Panel() {
     return `spaceShips_00${shipIndex}.png`;
   };
 
-  const getUserDisplayName = () => {
-    if (!user) return null;
-    return user.displayName || (isIdShared ? `User_${user.id}` : `Anon_${user.opaqueId}`);
-  };
+  const validUser = Boolean(user?.displayName && isIdShared && auth);
 
-  const isValidUser = () => {
-    const displayName = getUserDisplayName();
-    return displayName && !displayName.startsWith('Anon_') && user?.displayName;
-  };
-
-  const sendUserDataToServer = () => {
-    if (!isValidUser()) {
-      console.log('Not sending user data - invalid user:', {
-        user: user?.displayName,
-        isIdShared,
-        getUserDisplayName: getUserDisplayName()
-      });
-      return;
-    }
-    
+  useEffect(() => {
     const pressedKeys = Object.keys(keyStates).filter(key => keyStates[key]);
-    const userData = {
-      type: 'user_data',
-      authToken: auth?.token,
-      helixToken: auth?.helixToken,
-      username: user?.displayName,
-      userId: user?.id,
-      opaqueId: user?.opaqueId,
+    sendLatest('user_data', validUser ? {
+      authToken: auth!.token,
+      helixToken: auth!.helixToken,
       keyPressed: pressedKeys.join(','),
       keyActive: pressedKeys.length > 0
-    };
-    
-    send(userData);
-  };
+    } : null);
+  }, [auth, validUser, keyStates]);
 
-  const sendShipSelectionToServer = () => {
-    if (!isValidUser()) return;
-    
-    const shipData = {
-      type: 'ship_selection',
-      authToken: auth?.token,
-      helixToken: auth?.helixToken,
-      username: user?.displayName,
-      userId: user?.id,
-      opaqueId: user?.opaqueId,
+  useEffect(() => {
+    sendLatest('ship_selection', validUser && preferencesLoaded ? {
+      authToken: auth!.token,
+      helixToken: auth!.helixToken,
       shipKey: getShipFilename(selectedShip)
-    };
-    
-    send(shipData);
-  };
+    } : null);
+  }, [auth, validUser, selectedShip, preferencesLoaded]);
 
-  const sendInputToServer = () => {
-    if (!isValidUser()) return;
-    
-    // Map key states to movement input (keys are now normalized to lowercase)
-    const inputData = {
-      type: 'input',
-      authToken: auth?.token,
-      up: keyStates['w'] || keyStates['ArrowUp'],
-      down: keyStates['s'] || keyStates['ArrowDown'],
-      left: keyStates['a'] || keyStates['ArrowLeft'],
-      right: keyStates['d'] || keyStates['ArrowRight'],
-      rotateLeft: keyStates['q'],
-      rotateRight: keyStates['e'],
-      space: keyStates[' '],
-      shift: keyStates['Shift']
-    };
-    
-    send(inputData);
-  };
-
-  // Send user data to server when user or keystrokes change
   useEffect(() => {
-    sendUserDataToServer();
-    sendInputToServer();
-  }, [user, auth, keyStates, isIdShared]);
-
-  // Send ship selection to server only when ship selection changes (but not during initial load)
-  useEffect(() => {
-    if (preferencesLoaded) {
-      sendShipSelectionToServer();
-    }
-  }, [user, auth, selectedShip, isIdShared, preferencesLoaded]);
+    sendLatest('input', validUser ? {
+      authToken: auth!.token,
+      up: Boolean(keyStates['w'] || keyStates['ArrowUp']),
+      down: Boolean(keyStates['s'] || keyStates['ArrowDown']),
+      left: Boolean(keyStates['a'] || keyStates['ArrowLeft']),
+      right: Boolean(keyStates['d'] || keyStates['ArrowRight']),
+      rotateLeft: Boolean(keyStates['q']),
+      rotateRight: Boolean(keyStates['e']),
+      space: Boolean(keyStates[' ']),
+      shift: Boolean(keyStates['Shift'])
+    } : null);
+  }, [auth, validUser, keyStates]);
 
   const handleShipSelect = (shipIndex: number) => {
     setSelectedShip(shipIndex);
@@ -239,6 +194,7 @@ export default function Panel() {
         ) }
       </section>
       <footer>
+        {connectionError && <p role="alert">{connectionError}</p>}
         <div className="user-info">
           {user ? (
             <>
