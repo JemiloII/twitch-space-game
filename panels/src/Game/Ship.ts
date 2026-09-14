@@ -75,6 +75,9 @@ export function createShip(
   
   // Load ship data and apply scale, thrusters, and guns asynchronously
   loadShipData(key).then(shipData => {
+    // A player may leave or choose another ship before this request finishes.
+    if (!ship.scene || !ship.body) return;
+
     // Apply scale from JSON data
     ship.setScale(shipData.scale);
     
