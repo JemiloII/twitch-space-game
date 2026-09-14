@@ -20,6 +20,8 @@ export function setControls(scene: Scene) {
       left: KeyCodes.A,
       right: KeyCodes.D,
       rotateLeft: KeyCodes.Q,
-      rotateRight: KeyCodes.E
+      rotateRight: KeyCodes.E,
+      space: KeyCodes.SPACE,
+      shift: KeyCodes.SHIFT
     }) as Controls;
 }

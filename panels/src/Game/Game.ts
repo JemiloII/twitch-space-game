@@ -23,4 +23,6 @@ const config: Types.Core.GameConfig = {
     ]
 };
 
-export default new Game(config);
+const game = new Game(config);
+if (import.meta.hot) import.meta.hot.dispose(() => game.destroy(true));
+export default game;

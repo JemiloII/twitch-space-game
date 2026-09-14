@@ -20,6 +20,12 @@ Open [the game](http://127.0.0.1:2053/game.html) or
 [the Twitch panel](http://127.0.0.1:2053/panel.html).
 The panel needs Twitch to sign a player in.
 
+To try flying without a Twitch account, open the game and click **Play practice**.
+Use **W** to thrust, **A/D** or **Q/E** to turn, and **Space** to fire.
+Pick a ship from the menu or click **Reset ship** to start in the middle again.
+Practice runs in your browser and does not send controls or saved choices to the
+live game. Click **Watch live game** to return to the Twitch view.
+
 Local use does not need HTTPS certificates. For a public HTTPS server, set
 `TLS_CERT_FILE` and `TLS_KEY_FILE` to your certificate and private key paths in
 both terminals. Set `HOST` to the address to listen on (for example, `0.0.0.0`).

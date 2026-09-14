@@ -13,6 +13,13 @@
         #game-status { margin: 0; color: #abbddc; }
         #game { flex: 1; width: 100%; min-height: 0; overflow: hidden; }
         canvas { display: block; }
+        button, select { font: inherit; color: #e6efff; background: #18253e; border: 1px solid #597398; border-radius: 6px; padding: 8px 12px; }
+        button { cursor: pointer; }
+        button:hover { background: #253c62; }
+        button:focus-visible, select:focus-visible { outline: 2px solid #65d8ff; outline-offset: 3px; }
+        #practice-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+        #game-controls { flex-basis: 100%; margin: 0; color: #abbddc; font-size: 13px; }
+        [hidden] { display: none !important; }
     </style>
 </head>
 
@@ -20,6 +27,13 @@
     <header>
         <h1>Space Shooter</h1>
         <p id="game-status" role="status" aria-live="polite">Connecting to the game…</p>
+        <button id="practice-toggle" type="button" disabled>Play practice</button>
+        <div id="practice-tools" hidden>
+            <label for="practice-ship">Your ship</label>
+            <select id="practice-ship"></select>
+            <button id="practice-reset" type="button">Reset ship</button>
+        </div>
+        <p id="game-controls" hidden>W: thrust · A/D or Q/E: turn · Space: fire</p>
     </header>
     <div id="game"></div>
     <script type="module" src="/src/Game/Game.ts"></script>
