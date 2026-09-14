@@ -24,8 +24,8 @@ export class ThrusterSystem {
       const frames = [
         '0001.png', '0007.png', '0013.png', '0019.png', '0025.png', '0031.png',
         '0037.png', '0043.png', '0049.png', '0055.png', '0061.png', '0067.png',
-        '0073.png', '0079.png', '0085.png', '0091.png', '0097.png', '0104.png',
-        '0115.png', '0123.png'
+        '0073.png', '0079.png', '0085.png', '0091.png', '0097.png', '0103.png',
+        '0109.png', '0115.png', '0121.png'
       ].map(frame => ({
         key: 'thruster_fire',
         frame: frame
