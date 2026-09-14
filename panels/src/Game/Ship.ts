@@ -52,8 +52,8 @@ export function createShip(
     const colorHashKey = `${key}_${colorHash(color)}`;
     if (!scene.textures.exists(colorHashKey)) {
       RecolorTexture(scene, key, colorHashKey, color);
-      shipKey = colorHashKey;
     }
+    shipKey = colorHashKey;
   }
 
   const ship = scene.matter.add.sprite(spawn_x, spawn_y, shipKey)
