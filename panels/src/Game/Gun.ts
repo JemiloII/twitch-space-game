@@ -1,5 +1,3 @@
-import { Scene } from 'phaser';
-
 export interface GunConfig {
   x: number;
   y: number;
@@ -13,8 +11,6 @@ export interface GunConfig {
 
 export class GunSystem {
   private gunConfigs: GunConfig[] = [];
-
-  constructor(_scene: Scene) {}
 
   loadGunConfigs(gunConfigs: GunConfig[]): void {
     this.gunConfigs = gunConfigs;

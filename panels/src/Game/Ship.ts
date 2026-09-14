@@ -71,7 +71,7 @@ export function createShip(
   ship.thrusterSystem = new ThrusterSystem(scene);
   
   // Initialize gun system
-  ship.gunSystem = new GunSystem(scene);
+  ship.gunSystem = new GunSystem();
   
   // Load ship data and apply scale, thrusters, and guns asynchronously
   loadShipData(key).then(shipData => {
