@@ -26,6 +26,11 @@ both terminals. Set `HOST` to the address to listen on (for example, `0.0.0.0`).
 The default is `127.0.0.1`, which only accepts connections from this computer.
 The game server uses port 2087 unless `PORT` is set.
 
+For a public server, set `NODE_ENV=production` and `SESSION_SECRET` to a private,
+random value of at least 32 bytes. Keep that value out of source control.
+Local runs make a fresh key at startup, so local players get new sessions after
+a server restart. Old tokens made with the former public key no longer work.
+
 The commands below run from the `panels` folder.
 ### To run the project
 ```bash

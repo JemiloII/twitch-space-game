@@ -15,7 +15,7 @@ let socketUrl = getSocketUrl();
 function connected(event: any) {
   try {
     const message = JSON.parse(event.data);
-    console.log('Connected to server!', message);
+    console.log('Connected to server!');
 
     if (message.type === 'connected') {
 

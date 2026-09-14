@@ -89,7 +89,6 @@ wss.on('connection', socket => {
         }
 
         const response = { type: 'connected', id: playerId, token };
-        console.log('sending response', response);
         socket.send(JSON.stringify(response));
         return;
       }
