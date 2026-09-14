@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 
@@ -12,11 +13,18 @@ export default defineConfig(({ mode }) => {
   }
   return {
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: Object.fromEntries(['index', 'game', 'panel', 'config'].map(name => [
+        name, fileURLToPath(new URL(`./${name}.html`, import.meta.url))
+      ]))
+    }
+  },
   server: {
     host: env.HOST || '127.0.0.1',
     port: 2053,
     cors: true,
-    open: '/game',
+    open: false,
     https: certFile ? {
       cert: fs.readFileSync(certFile),
       key: fs.readFileSync(keyFile)
