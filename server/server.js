@@ -7,7 +7,8 @@ import express from 'express';
 import { WebSocketServer } from 'ws';
 import { sign, verify } from './token.js';
 import { createPlayerBody, removePlayerBody, updatePhysics, getPlayerSnapshot } from './physics.js';
-import { createProjectile, getProjectileCount } from './projectiles.js';
+import { getProjectileCount } from './projectiles.js';
+import { updateWeapons } from './weapons.js';
 import { initDatabase, getPlayerPreferences, savePlayerPreferences } from './database.js';
 import { AuthError, verifyTwitchToken, bindPlayerIdentity, resolveTwitchName } from './auth.js';
 import { createPlayerApi } from './playerApi.js';
@@ -97,6 +98,8 @@ wss.on('connection', socket => {
           };
         }
 
+        players[playerId].sockets ??= new Set();
+        players[playerId].sockets.add(socket);
         const response = { type: 'connected', id: playerId, token };
         socket.send(JSON.stringify(response));
         return;
@@ -173,23 +176,6 @@ wss.on('connection', socket => {
       // Update last input time
       players[playerId].lastInputTime = Date.now();
       
-      // Handle shooting
-      if (players[playerId].input.space) {
-        console.log(`[server] 🔫 SPACEBAR HELD by ${players[playerId].twitchUsername || playerId}, gunConfigs: ${players[playerId].gunConfigs?.length || 0}, lastShotTime: ${Date.now() - players[playerId].lastShotTime}ms ago`);
-        if (players[playerId].gunConfigs && players[playerId].gunConfigs.length > 0) {
-          fireWeapons(playerId);
-        } else {
-          console.log(`[server] ❌ No gun configs loaded for player ${playerId}`);
-        }
-      } else {
-        // Log when spacebar is released to detect input interruptions
-        if (players[playerId].wasSpacePressed) {
-          console.log(`[server] 🔫 SPACEBAR RELEASED by ${players[playerId].twitchUsername || playerId}`);
-        }
-      }
-      
-      // Track previous space state
-      players[playerId].wasSpacePressed = players[playerId].input.space;
     } catch (error) {
       if (players[playerId]) players[playerId].input = {};
       if (socket.readyState === 1) socket.send(JSON.stringify({
@@ -206,6 +192,9 @@ wss.on('connection', socket => {
     console.log('Socket closed for', playerId);
     if (playerId && players[playerId]) {
       const player = players[playerId];
+      player.sockets?.delete(socket);
+      if (player.sockets?.size) return;
+      player.input = {};
       
       // Don't remove from active players immediately - keep them in game world
       // Set a timeout to remove them after 2 minutes to handle lag/reconnection
@@ -243,59 +232,10 @@ async function loadGunConfigs(playerId, shipKey) {
   }
 }
 
-// Shooting handler function
-function fireWeapons(playerId) {
-  const player = players[playerId];
-  const now = Date.now();
-  
-  // Initialize per-gun shot times if not exists
-  if (!player.gunShotTimes) {
-    player.gunShotTimes = {};
-  }
-  
-  let shotsFired = 0;
-  let shotsOnCooldown = 0;
-  
-  // Check if any gun can fire (each gun has its own fire rate)
-  player.gunConfigs.forEach((gunConfig, gunIndex) => {
-    const gunId = `gun_${gunIndex}`;
-    const lastShotTime = player.gunShotTimes[gunId] || 0;
-    const timeSinceLastShot = now - lastShotTime;
-    
-    console.log(`[fireWeapons] Gun ${gunIndex} cooldown: ${timeSinceLastShot}ms / ${gunConfig.fireRate}ms required (speed: ${gunConfig.projectileSpeed}, lifetime: ${gunConfig.projectileLifetime}ms)`);
-    
-    if (timeSinceLastShot >= gunConfig.fireRate) {
-      const body = player.body;
-      const gunAngle = body.angle + (gunConfig.rotation * Math.PI / 180);
-      
-      // Calculate gun position relative to ship
-      const cos = Math.cos(body.angle);
-      const sin = Math.sin(body.angle);
-      const gunX = body.position.x + (gunConfig.x * cos - gunConfig.y * sin);
-      const gunY = body.position.y + (gunConfig.x * sin + gunConfig.y * cos);
-      
-      // Get ship velocity for projectile inheritance
-      const shipVelocity = { x: body.velocity.x, y: body.velocity.y };
-      
-      // Create projectile with ship velocity inheritance
-      const projectile = createProjectile(playerId, gunX, gunY, gunAngle * 180 / Math.PI, gunConfig, shipVelocity);
-      player.gunShotTimes[gunId] = now;
-      shotsFired++;
-      
-      console.log(`[fireWeapons] ✅ Gun ${gunIndex} FIRED! Next shot in ${gunConfig.fireRate}ms`);
-    } else {
-      shotsOnCooldown++;
-    }
-  });
-  
-  if (shotsFired === 0 && shotsOnCooldown > 0) {
-    console.log(`[fireWeapons] 🔒 All ${shotsOnCooldown} guns on cooldown`);
-  }
-}
-
 setInterval(() => {
   const startTime = Date.now();
   updatePhysics(players);
+  updateWeapons(players);
   const physicsTime = Date.now() - startTime;
   
   const snapshot = getPlayerSnapshot(players);
