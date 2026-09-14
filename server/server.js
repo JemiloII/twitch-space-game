@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import https from 'node:https';
+import http from 'node:http';
 import cors from 'cors';
 import express from 'express';
 import { WebSocketServer } from 'ws';
@@ -11,13 +12,14 @@ import { initDatabase, getPlayerPreferences, savePlayerPreferences } from './dat
 
 const app = express();
 
-// Use the same certificates as Vite
-const httpsOptions = {
-  cert: fs.readFileSync('C:\\Certbot\\live\\game.shibiko.ai\\fullchain.pem'),
-  key: fs.readFileSync('C:\\Certbot\\live\\game.shibiko.ai\\privkey.pem')
-};
-
-const server = https.createServer(httpsOptions, app);
+const certFile = process.env.TLS_CERT_FILE;
+const keyFile = process.env.TLS_KEY_FILE;
+if (Boolean(certFile) !== Boolean(keyFile)) {
+  throw new Error('Set both TLS_CERT_FILE and TLS_KEY_FILE to use HTTPS.');
+}
+const server = certFile
+  ? https.createServer({ cert: fs.readFileSync(certFile), key: fs.readFileSync(keyFile) }, app)
+  : http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const players = {}; // { socket.id: { body, input } }
@@ -456,4 +458,6 @@ app.post('/api/players', async (req, res) => {
   }
 });
 
-server.listen(2087, '0.0.0.0', () => console.log('Server running on https://game.shibiko.ai:2087'));
+const port = Number(process.env.PORT || 2087);
+const host = process.env.HOST || '127.0.0.1';
+server.listen(port, host, () => console.log(`Server running on ${certFile ? 'https' : 'http'}://${host}:${port}`));

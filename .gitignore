@@ -26,3 +26,9 @@ dist-ssr
 # Local development files
 memory-bank/
 dev-setup.md
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
