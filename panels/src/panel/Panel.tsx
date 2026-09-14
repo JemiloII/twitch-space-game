@@ -4,6 +4,7 @@ import Tabs from './Tabs/Tabs.tsx';
 import { useTwitchStore } from '../stores/twitchStore';
 import { connect, listen, sendLatest } from '../Game/Socket';
 import { getApiUrl } from '../Game/Backend';
+import { bindPanelKeyboard } from './Keyboard';
 import './Panel.scss'
 
 export default function Panel() {
@@ -78,36 +79,15 @@ export default function Panel() {
     loadPlayerPreferences();
   }, [user, auth, isIdShared, preferencesLoaded]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Normalize key to prevent modifier keys from affecting letters
-      let key = event.key;
-      
-      // Convert uppercase letters to lowercase
-      if (key.length === 1 && key >= 'A' && key <= 'Z') {
-        key = key.toLowerCase();
-      }
-      
-      setKeyStates(prev => ({ ...prev, [key]: true }));
-    };
-    
-    const handleKeyUp = (event: KeyboardEvent) => {
-      let { key } = event;
-      if (key.length === 1 && key >= 'A' && key <= 'Z') {
-        key = key.toLowerCase();
-      }
-      
-      setKeyStates(prev => ({ ...prev, [key]: false }));
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
+  useEffect(() => bindPanelKeyboard(setKeyStates, () => {
+    const { auth, isIdShared } = useTwitchStore.getState();
+    if (!auth || !isIdShared) return;
+    sendLatest('user_data', { authToken: auth.token, helixToken: auth.helixToken, keyPressed: '', keyActive: false });
+    sendLatest('input', {
+      authToken: auth.token, up: false, down: false, left: false, right: false,
+      rotateLeft: false, rotateRight: false, space: false, shift: false
+    });
+  }), []);
 
   console.log('Panel render:', {
     user,

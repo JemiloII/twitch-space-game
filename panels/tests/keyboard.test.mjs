@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+
+test('focus loss releases held keys without waiting for keyup or a render', () => {
+  const exported = {};
+  const source = fs.readFileSync(new URL('../src/panel/Keyboard.ts', import.meta.url), 'utf8');
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: exported });
+  const win = new EventTarget(), doc = new EventTarget();
+  doc.hidden = false;
+  let state, releases = 0;
+  const stop = exported.bindPanelKeyboard(keys => { state = keys; }, () => { releases++; }, win, doc);
+  const press = key => { const event = new Event('keydown'); event.key = key; win.dispatchEvent(event); };
+  press('W'); press(' ');
+  assert.equal(state.w, true);
+  assert.equal(state[' '], true);
+  win.dispatchEvent(new Event('blur'));
+  assert.equal(Object.keys(state).length, 0);
+  assert.equal(releases, 1);
+  press('W'); doc.hidden = true; doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(Object.keys(state).length, 0);
+  assert.equal(releases, 2);
+  press('W');
+  assert.equal(Object.keys(state).length, 0);
+  stop();
+  win.dispatchEvent(new Event('blur'));
+  assert.equal(releases, 3, 'cleanup releases once and removes the listeners');
+});
