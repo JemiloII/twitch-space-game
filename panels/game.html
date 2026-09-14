@@ -6,15 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Space Shooter</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            background-color: lawngreen;
-        }
+        * { box-sizing: border-box; }
+        body { margin: 0; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; background: #050912; color: #e6efff; font: 15px system-ui, sans-serif; }
+        header { flex: 0 0 auto; min-height: 76px; padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; justify-content: space-between; }
+        h1 { margin: 0; font-size: 20px; }
+        #game-status { margin: 0; color: #abbddc; }
+        #game { flex: 1; width: 100%; min-height: 0; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 
 <body>
+    <header>
+        <h1>Space Shooter</h1>
+        <p id="game-status" role="status" aria-live="polite">Connecting to the game…</p>
+    </header>
     <div id="game"></div>
     <script type="module" src="/src/Game/Game.ts"></script>
 </body>

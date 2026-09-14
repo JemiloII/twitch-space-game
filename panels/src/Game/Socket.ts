@@ -59,6 +59,7 @@ export function connect(url: string = socketUrl): WebSocket {
     if (socket !== current) return;
     isConnected = false;
     lastConnection = undefined;
+    for (const handler of listeners) deliver(handler, { type: 'connection_state', state: 'disconnected' });
     scheduleReconnect();
   });
   current.addEventListener('error', () => { if (socket === current) current.close(); });

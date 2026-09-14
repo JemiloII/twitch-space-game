@@ -70,7 +70,17 @@ export default class GameScene extends Scene {
     this.projectileSystem = new ProjectileSystem(this);
 
     const stopListening = Socket.listen(message => {
+      const status = document.getElementById('game-status');
+      if (message.type === 'connection_state') {
+        if (status) status.textContent = 'Connection lost. Reconnecting…';
+        return;
+      }
+      if (message.type === 'auth_error' || message.type === 'error') {
+        if (status) status.textContent = message.reason;
+        return;
+      }
       if (message.type === 'connected') {
+        if (status) status.textContent = 'Connected. Waiting for Twitch players to join.';
         this.playerId = message.id;
         localStorage.setItem('playerId', message.id);
         localStorage.setItem('playerToken', message.token);
@@ -87,6 +97,10 @@ export default class GameScene extends Scene {
         
         // Handle players (note: message.players is now nested under message.players)
         const playersData = message.players || {};
+        const count = Object.keys(playersData).length;
+        if (status) status.textContent = count
+          ? `${count} ${count === 1 ? 'pilot' : 'pilots'} flying • Live Twitch game`
+          : 'Connected. Waiting for Twitch players to join.';
         for (const id in playersData) {
           const data = playersData[id];
 
