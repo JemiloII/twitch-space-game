@@ -26,7 +26,7 @@ export function createPlayerBody(x = WORLD_CONFIG.width / 2, y = WORLD_CONFIG.he
 }
 
 export function removePlayerBody(body) {
-  Matter.World.remove(engine.world, body);
+  if (body) Matter.World.remove(engine.world, body);
 }
 
 export function updatePhysics(players) {
@@ -35,6 +35,8 @@ export function updatePhysics(players) {
   for (const id in players) {
     const player = players[id];
     const body = player.body;
+    if (!body) continue;
+    if (!player.authExpiresAt || player.authExpiresAt <= Date.now()) player.input = {};
 
     // Handle rotation (support both A/D and Q/E)
     if (player.input.left || player.input.rotateLeft) {
@@ -93,7 +95,7 @@ export function getPlayerSnapshot(players) {
     const body = player.body;
     
     // Only include players with valid Twitch usernames
-    if (player.twitchUsername && !player.twitchUsername.startsWith('Anon_')) {
+    if (body && player.twitchUsername && !player.twitchUsername.startsWith('Anon_')) {
       snapshot.players[id] = {
         x: body.position.x,
         y: body.position.y,

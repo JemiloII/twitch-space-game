@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import Tabs from './Tabs/Tabs.tsx';
 import { useTwitchStore } from '../stores/twitchStore';
 import { connect, send } from '../Game/Socket';
+import { getApiUrl } from '../Game/Backend';
 import './Panel.scss'
 
 export default function Panel() {
@@ -31,7 +32,7 @@ export default function Panel() {
   // Load player preferences when user is available
   useEffect(() => {
     const loadPlayerPreferences = async () => {
-      if (!user || preferencesLoaded) return;
+      if (!user || !auth || preferencesLoaded) return;
       
       try {
         const params = new URLSearchParams();
@@ -42,7 +43,9 @@ export default function Panel() {
           params.append('twitchOpaqueId', user.opaqueId);
         }
         
-        const response = await fetch(`https://game.shibiko.ai:2087/api/players?${params}`);
+        const response = await fetch(getApiUrl(`/api/players?${params}`), {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
         if (response.ok) {
           const preferences = await response.json();
           
@@ -68,7 +71,7 @@ export default function Panel() {
     };
     
     loadPlayerPreferences();
-  }, [user, isIdShared, preferencesLoaded]);
+  }, [user, auth, isIdShared, preferencesLoaded]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -135,6 +138,8 @@ export default function Panel() {
     const pressedKeys = Object.keys(keyStates).filter(key => keyStates[key]);
     const userData = {
       type: 'user_data',
+      authToken: auth?.token,
+      helixToken: auth?.helixToken,
       username: user?.displayName,
       userId: user?.id,
       opaqueId: user?.opaqueId,
@@ -142,7 +147,6 @@ export default function Panel() {
       keyActive: pressedKeys.length > 0
     };
     
-    console.log('Sending user data to server:', userData);
     send(userData);
   };
 
@@ -151,13 +155,14 @@ export default function Panel() {
     
     const shipData = {
       type: 'ship_selection',
+      authToken: auth?.token,
+      helixToken: auth?.helixToken,
       username: user?.displayName,
       userId: user?.id,
       opaqueId: user?.opaqueId,
       shipKey: getShipFilename(selectedShip)
     };
     
-    console.log('Sending ship selection to server:', shipData);
     send(shipData);
   };
 
@@ -166,6 +171,8 @@ export default function Panel() {
     
     // Map key states to movement input (keys are now normalized to lowercase)
     const inputData = {
+      type: 'input',
+      authToken: auth?.token,
       up: keyStates['w'] || keyStates['ArrowUp'],
       down: keyStates['s'] || keyStates['ArrowDown'],
       left: keyStates['a'] || keyStates['ArrowLeft'],
@@ -176,7 +183,6 @@ export default function Panel() {
       shift: keyStates['Shift']
     };
     
-    console.log('Sending input to server:', inputData);
     send(inputData);
   };
 
@@ -184,14 +190,14 @@ export default function Panel() {
   useEffect(() => {
     sendUserDataToServer();
     sendInputToServer();
-  }, [user, keyStates, isIdShared]);
+  }, [user, auth, keyStates, isIdShared]);
 
   // Send ship selection to server only when ship selection changes (but not during initial load)
   useEffect(() => {
     if (preferencesLoaded) {
       sendShipSelectionToServer();
     }
-  }, [user, selectedShip, isIdShared, preferencesLoaded]);
+  }, [user, auth, selectedShip, isIdShared, preferencesLoaded]);
 
   const handleShipSelect = (shipIndex: number) => {
     setSelectedShip(shipIndex);

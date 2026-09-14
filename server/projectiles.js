@@ -73,6 +73,7 @@ export function checkCollisions(players) {
       if (playerId === projectile.playerId) continue;
       
       const player = players[playerId];
+      if (!player.body) continue;
       const dx = projectile.x - player.body.position.x;
       const dy = projectile.y - player.body.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);

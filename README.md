@@ -31,6 +31,19 @@ random value of at least 32 bytes. Keep that value out of source control.
 Local runs make a fresh key at startup, so local players get new sessions after
 a server restart. Old tokens made with the former public key no longer work.
 
+To let Twitch players join, set `TWITCH_EXTENSION_SECRET` to the Base64 secret
+from your Twitch extension settings and `TWITCH_CLIENT_ID` to its client ID on
+the game server. You can set `TWITCH_CHANNEL_ID` to limit play to one channel.
+Without these settings the game can be viewed, but player changes are refused.
+The secret stays on the server. The panel sends Twitch's signed login token;
+the server checks it and looks up the player's name with Twitch.
+See [Twitch's login token guide](https://dev.twitch.tv/docs/extensions/building/#authentication).
+
+When hosting the panel on Twitch, set `VITE_GAME_SERVER_URL` in the panel's
+build environment to your HTTPS game server URL, including its port. Local
+pages use the current computer on port 2087 by default. API calls and game
+connections use the same server address.
+
 The commands below run from the `panels` folder.
 ### To run the project
 ```bash

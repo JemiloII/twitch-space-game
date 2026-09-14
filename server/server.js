@@ -9,6 +9,11 @@ import { sign, verify } from './token.js';
 import { createPlayerBody, removePlayerBody, updatePhysics, getPlayerSnapshot } from './physics.js';
 import { createProjectile, getProjectileCount } from './projectiles.js';
 import { initDatabase, getPlayerPreferences, savePlayerPreferences } from './database.js';
+import { AuthError, verifyTwitchToken, bindPlayerIdentity, resolveTwitchName } from './auth.js';
+import { createPlayerApi } from './playerApi.js';
+
+const ships = JSON.parse(fs.readFileSync(new URL('../panels/public/json/ships.json', import.meta.url), 'utf8'));
+const validShip = key => ships.some(ship => ship.subtexture === key);
 
 const app = express();
 
@@ -32,10 +37,13 @@ await initDatabase();
 wss.on('connection', socket => {
   let playerId = undefined;
 
-  socket.on('message', async raw => {
+  let messageQueue = Promise.resolve();
+  const handleMessage = async raw => {
     try {
       const message = JSON.parse(raw.toString());
+      if (!message || typeof message !== 'object' || Array.isArray(message)) return;
       if (message.type === 'handshake') {
+        if (playerId) return;
         let { id, token } = message;
 
         const isValid = typeof id === 'string' && typeof token === 'string' && verify(id, token);
@@ -60,7 +68,8 @@ wss.on('connection', socket => {
           console.log('[server] player successfully reactivated without refresh!');
         } else if (!players[playerId]) {
           console.log('[server] creating new player (genuinely new or lost from system):', playerId);
-          const body = createPlayerBody();
+          // Spectators get a session, but only verified players get a physics body.
+          const body = null;
           
           players[playerId] = {
             body: body,
@@ -69,7 +78,7 @@ wss.on('connection', socket => {
             twitchUsername: null,
             twitchUserId: null,
             twitchOpaqueId: null,
-            shipKey: null,
+            shipKey: 'spaceShips_001.png',
             keyPressed: null,
             keyActive: false,
             lastInputTime: Date.now(),
@@ -124,75 +133,28 @@ wss.on('connection', socket => {
         return;
       }
 
-      // Handle user data messages (keystroke data)
-      if (message.type === 'user_data') {
-        const { username, userId, opaqueId, keyPressed, keyActive } = message;
-        
-        // Filter out invalid users (no Twitch username or names starting with "Anon_")
-        if (!username || username.startsWith('Anon_')) {
-          console.log(`[server] filtering out anonymous user: ${username || 'no username'}`);
-          return;
-        }
-        
-        // Update player with Twitch data
-        players[playerId].twitchUsername = username;
-        players[playerId].twitchUserId = userId;
-        players[playerId].twitchOpaqueId = opaqueId;
-        players[playerId].keyPressed = keyPressed;
-        players[playerId].keyActive = keyActive;
-        
-        console.log(`[server] updated user data for ${username}:`, {
-          userId,
-          opaqueId,
-          keyPressed,
-          keyActive
-        });
-        
-        return;
+      if (!['user_data', 'ship_selection', 'input'].includes(message.type)) return;
+      const identity = verifyTwitchToken(message.authToken);
+      const player = players[playerId];
+      bindPlayerIdentity(player, identity);
+      if (!player.body) {
+        player.body = createPlayerBody();
+        await loadGunConfigs(playerId, player.shipKey);
       }
 
-      // Handle ship selection messages (separate from keystroke data)
-      if (message.type === 'ship_selection') {
-        const { username, userId, opaqueId, shipKey } = message;
-        
-        // Filter out invalid users (no Twitch username or names starting with "Anon_")
-        if (!username || username.startsWith('Anon_')) {
-          console.log(`[server] filtering out anonymous user: ${username || 'no username'}`);
-          return;
+      if (message.type === 'user_data' || message.type === 'ship_selection') {
+        const username = await resolveTwitchName(identity, message.helixToken);
+        player.twitchUsername = username;
+        if (message.type === 'user_data') {
+          player.keyPressed = typeof message.keyPressed === 'string' ? message.keyPressed.slice(0, 100) : '';
+          player.keyActive = message.keyActive === true;
+        } else {
+          if (!validShip(message.shipKey)) throw new Error('Choose a valid ship.');
+          player.shipKey = message.shipKey;
+          await loadGunConfigs(playerId, player.shipKey);
+          const saved = await savePlayerPreferences(identity.userId, username, identity.opaqueId, player.shipKey);
+          if (!saved) throw new Error('Could not save your ship.');
         }
-        
-        // Update player ship selection
-        players[playerId].twitchUsername = username;
-        players[playerId].twitchUserId = userId;
-        players[playerId].twitchOpaqueId = opaqueId;
-        players[playerId].shipKey = shipKey;
-        
-        console.log(`[server] updated ship selection for ${username}:`, {
-          userId,
-          opaqueId,
-          shipKey
-        });
-        
-        // Save preferences to database
-        try {
-          await savePlayerPreferences(userId, username, opaqueId, shipKey);
-          console.log(`[server] saved preferences to database for ${username}`);
-          
-          // Load gun configurations for this ship
-          await loadGunConfigs(playerId, shipKey);
-        } catch (error) {
-          console.error(`[server] error saving preferences for ${username}:`, error);
-        }
-        
-        return;
-      }
-
-      if (
-        typeof message !== 'object' ||
-        message.type === 'handshake' ||
-        message.type === 'connected'
-      ) {
-        console.warn('[server] rejecting invalid or unexpected message');
         return;
       }
 
@@ -229,8 +191,15 @@ wss.on('connection', socket => {
       // Track previous space state
       players[playerId].wasSpacePressed = players[playerId].input.space;
     } catch (error) {
-      console.error('[server] invalid message:', error);
+      if (players[playerId]) players[playerId].input = {};
+      if (socket.readyState === 1) socket.send(JSON.stringify({
+        type: error instanceof AuthError ? 'auth_error' : 'error',
+        reason: error instanceof AuthError ? error.message : 'Could not handle that game message.'
+      }));
     }
+  };
+  socket.on('message', raw => {
+    messageQueue = messageQueue.then(() => socket.readyState === 1 ? handleMessage(raw) : undefined);
   });
 
   socket.on('close', () => {
@@ -259,18 +228,8 @@ wss.on('connection', socket => {
 // Gun configuration loading function
 async function loadGunConfigs(playerId, shipKey) {
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    const shipsJsonPath = path.join(process.cwd(), '../panels/public/json/ships.json');
-    console.log(`[server] trying to load gun configs from: ${shipsJsonPath}`);
-    
-    const shipsData = fs.readFileSync(shipsJsonPath, 'utf8');
-    const ships = JSON.parse(shipsData);
-    
-    const ship = ships.find(s => s.subtexture?.includes(shipKey.replace('.png', '')));
-    console.log(`[server] found ship for ${shipKey}:`, ship ? ship.name : 'NOT FOUND');
-    
+    const ship = ships.find(ship => ship.subtexture === shipKey);
+
     if (ship && ship.guns) {
       players[playerId].gunConfigs = ship.guns;
       console.log(`[server] ✓ loaded ${ship.guns.length} gun configs for player ${playerId} (${shipKey})`);
@@ -418,44 +377,11 @@ app.use(cors());
 app.use(express.json());
 // app.use(express.static('public'));
 
-// API endpoint to get player data
-app.get('/api/players', async (req, res) => {
-  try {
-    const { twitchUserId, twitchOpaqueId } = req.query;
-    
-    if (!twitchUserId && !twitchOpaqueId) {
-      return res.status(400).json({ error: 'Either twitchUserId or twitchOpaqueId is required' });
-    }
-    
-    const playerData = await getPlayerPreferences(twitchUserId, twitchOpaqueId);
-    res.json(playerData);
-  } catch (error) {
-    console.error('[api] Error getting player data:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// API endpoint to save player data
-app.post('/api/players', async (req, res) => {
-  try {
-    const { twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors } = req.body;
-    
-    if (!twitchUserId && !twitchOpaqueId) {
-      return res.status(400).json({ error: 'Either twitchUserId or twitchOpaqueId is required' });
-    }
-    
-    const success = await savePlayerPreferences(twitchUserId, twitchUsername, twitchOpaqueId, selectedShip, shipColors);
-    
-    if (success) {
-      res.json({ success: true });
-    } else {
-      res.status(500).json({ error: 'Failed to save player data' });
-    }
-  } catch (error) {
-    console.error('[api] Error saving player data:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+app.use('/api/players', createPlayerApi({
+  getPreferences: getPlayerPreferences,
+  savePreferences: savePlayerPreferences,
+  validShip
+}));
 
 const port = Number(process.env.PORT || 2087);
 const host = process.env.HOST || '127.0.0.1';

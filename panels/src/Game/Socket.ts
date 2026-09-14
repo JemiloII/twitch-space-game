@@ -1,14 +1,10 @@
+import { getSocketUrl } from './Backend';
+
 const reconnectDelay = 1000;
 let isConnected = false;
 let playerId = localStorage.getItem('playerId');
 let token = localStorage.getItem('token');
 let socket: WebSocket;
-// Dynamically determine WebSocket URL based on current host
-const getSocketUrl = () => {
-  const host = window.location.hostname;
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${host}:2087`;
-};
 
 let socketUrl = getSocketUrl();
 
